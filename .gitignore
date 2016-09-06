@@ -1,4 +1,5 @@
 *.pyo
 *.pyc
 .cache
+*.spotipy*
 __pycache__
