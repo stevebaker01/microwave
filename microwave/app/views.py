@@ -6,8 +6,8 @@ from pprint import pprint
 
 
 PORT_NUMBER = 8000
-SPOTIPY_CLIENT_ID = '77f022cc59f6434ba93008b3a9177ecb'
-SPOTIPY_CLIENT_SECRET = 'aa173ade55cb4d5c8206d6ec022f6be3'
+SPOTIPY_CLIENT_ID = ''
+SPOTIPY_CLIENT_SECRET = ''
 SPOTIPY_REDIRECT_URI = 'http://localhost:8000/suckify'
 SCOPE = 'playlist-read-private'
 CACHE = '.spotipyoauthcache'
