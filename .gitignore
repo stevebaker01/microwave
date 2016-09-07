@@ -1,5 +1,6 @@
 *.pyo
 *.pyc
 .cache
+*.sqlite3
 *.spotipy*
 __pycache__
