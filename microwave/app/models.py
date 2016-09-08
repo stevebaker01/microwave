@@ -1,25 +1,26 @@
 from django.db import models
 
-
-class DomainAttribute(models.Model):
-
-    DOMAIN_CHOICES = (
-        ('spotify', 'spotify'),
-    )
-    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
+DOMAIN_CHOICES = (
+    ('spotify', 'spotify'),
+)
 
 
-class Identifier(DomainAttribute):
+class Identifier(models.Model):
 
     TYPE_CHOICES = (
+        ('href', 'href'),
         ('id', 'id'),
         ('name', 'name'),
-        ('href', 'href'),
         ('uri', 'uri')
     )
+    CLASS_CHOICES = (
+        ('str', 'str'),
+        ('int', 'int')
+    )
+    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
     type = models.CharField(max_length=4, choices=TYPE_CHOICES)
     identity = models.CharField(max_length=250)
-    cls = models.CharField(max_length=3, default='str')
+    cls = models.CharField(max_length=3, default='str', choices=CLASS_CHOICES)
 
     def __str__(self):
         return self.identity
@@ -28,61 +29,58 @@ class Identifier(DomainAttribute):
         return eval('{}(self.identifier)'.format(self.cls))
 
 
-class Genre(DomainAttribute):
+class Genre(models.Model):
 
+    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
     name = models.CharField(max_length=50)
 
     def __str__(self):
         return '{}: {}'.format(self.domain, self.name)
 
 
-class Duration(DomainAttribute):
+class Duration(models.Model):
 
+    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
     miliseconds = models.IntegerField()
 
     def __str__(self):
         return '{}: {}'.format(self.domain, self.miliseconds)
 
 
-class AlbumType(DomainAttribute):
+class AlbumType(models.Model):
 
-    ALBUM_TYPE_CHOICES = (
-        ('album', 'album'),             # spotify
-        ('single', 'single'),           # spotify
-        ('compilation', 'compilation')  # spotify
+    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
+    TYPE_CHOICES = (
+        ('album', 'album'),
+        ('single', 'single'),
+        ('compilation', 'compilation')
     )
-    type = models.CharField(max_length=20, choices=ALBUM_TYPE_CHOICES)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
 
     def __str__(self):
         return '{}: {}'.format(self.domain, self.type)
 
 
-class ReleaseDate(DomainAttribute):
+class ReleaseDate(models.Model):
 
+    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
     date = models.DateField()
 
     def __str__(self):
         return '{}: {}'.format(self.domain, self.date.isoformat())
 
 
-class Base(models.Model):
+class Composer(models.Model):
 
     spotify_id = models.CharField(max_length=36)
     identifiers = models.ManyToManyField(Identifier)
-
-    def identify(self, type, domain):
-        for identifier in self.identifiers:
-            if identifier.type == type and identifier.domain == domain:
-                return identifier.identity()
-
-
-class Composer(Base):
-
     genres = models.ManyToManyField(Genre)
 
 
-class Track(Base):
+class Track(models.Model):
 
+    spotify_id = models.CharField(max_length=36)
+    identifiers = models.ManyToManyField(Identifier)
     composers = models.ManyToManyField(Composer)
     genres = models.ManyToManyField(Genre)
 
@@ -102,8 +100,10 @@ class Track(Base):
     valence = models.FloatField()
 
 
-class Album(Base):
+class Album(models.Model):
 
+    spotify_id = models.CharField(max_length=36)
+    identifiers = models.ManyToManyField(Identifier)
     types = models.ManyToManyField(AlbumType)
     genres = models.ManyToManyField(Genre)
     composers = models.ManyToManyField(Composer)
@@ -113,6 +113,7 @@ class Album(Base):
 
 class Playlist(models.Model):
 
+    spotify_id = models.CharField(max_length=36)
     identifiers = models.ManyToManyField(Identifier)
     domain = models.CharField(max_length=20)
     description = models.TextField(max_length=1500)
@@ -120,7 +121,8 @@ class Playlist(models.Model):
     tracks = models.ManyToManyField(Track)
 
 
-class User(Base):
+class User(models.Model):
 
+    spotify_id = models.CharField(max_length=36)
+    identifiers = models.ManyToManyField(Identifier)
     playlists = models.ManyToManyField(Playlist)
-
