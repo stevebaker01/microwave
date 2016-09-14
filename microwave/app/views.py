@@ -1,3 +1,4 @@
+import os
 import spotipy
 from . import suckify
 from spotipy import oauth2
@@ -6,13 +7,14 @@ from pprint import pprint
 
 
 PORT_NUMBER = 8000
-SPOTIPY_CLIENT_ID = ''
-SPOTIPY_CLIENT_SECRET = ''
-SPOTIPY_REDIRECT_URI = 'http://localhost:8000/suckify'
+CLIENT_ID = os.environ['CLIENT_ID']
+CLIENT_SECRET = os.environ['CLIENT_SECRET']
+REDIRECT_URI = 'http://localhost:8000'
 SCOPE = 'playlist-read-private'
 CACHE = '.spotipyoauthcache'
 
-sp_oauth = oauth2.SpotifyOAuth( SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET,SPOTIPY_REDIRECT_URI,scope=SCOPE,cache_path=CACHE )
+sp_oauth = oauth2.SpotifyOAuth(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI,
+                                scope=SCOPE,cache_path=CACHE)
 
 def index(request):
     access_token = ""
@@ -36,7 +38,7 @@ def index(request):
 
         #results = sp.user_playlists(sp.current_user()['id'])
         #pprint(results.keys())
-        return JsonResponse(results)
+        return HttpResponse(results)
     else:
         return HttpResponse(htmlForLoginButton())
 

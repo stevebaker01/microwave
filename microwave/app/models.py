@@ -1,88 +1,37 @@
 from django.db import models
 
-DOMAIN_CHOICES = (
-    ('spotify', 'spotify'),
-)
-
-
-class Identifier(models.Model):
-
-    TYPE_CHOICES = (
-        ('href', 'href'),
-        ('id', 'id'),
-        ('name', 'name'),
-        ('uri', 'uri')
-    )
-    CLASS_CHOICES = (
-        ('str', 'str'),
-        ('int', 'int')
-    )
-    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
-    type = models.CharField(max_length=4, choices=TYPE_CHOICES)
-    identity = models.CharField(max_length=250)
-    cls = models.CharField(max_length=3, default='str', choices=CLASS_CHOICES)
-
-    def __str__(self):
-        return self.identity
-
-    def identify(self):
-        return eval('{}(self.identifier)'.format(self.cls))
+DOMAIN_CHOICES = (('spotify', 'spotify'),)
 
 
 class Genre(models.Model):
 
-    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
-    name = models.CharField(max_length=50)
+    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES,
+                              blank=False)
+    name = models.CharField(max_length=50, blank=False)
+
+    class Meta:
+        unique_together = ('domain', 'name')
 
     def __str__(self):
         return '{}: {}'.format(self.domain, self.name)
 
 
-class Duration(models.Model):
-
-    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
-    miliseconds = models.IntegerField()
-
-    def __str__(self):
-        return '{}: {}'.format(self.domain, self.miliseconds)
-
-
-class AlbumType(models.Model):
-
-    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
-    TYPE_CHOICES = (
-        ('album', 'album'),
-        ('single', 'single'),
-        ('compilation', 'compilation')
-    )
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
-
-    def __str__(self):
-        return '{}: {}'.format(self.domain, self.type)
-
-
-class ReleaseDate(models.Model):
-
-    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES)
-    date = models.DateField()
-
-    def __str__(self):
-        return '{}: {}'.format(self.domain, self.date.isoformat())
-
-
 class Composer(models.Model):
 
-    spotify_id = models.CharField(max_length=36)
-    identifiers = models.ManyToManyField(Identifier)
+    spotify = models.BooleanField(default=False)
+    spotify_id = models.CharField(max_length=20, blank=True, unique=True,
+                                  db_index=True)
+    spotify_name = models.CharField(max_length=200, blank=True)
     genres = models.ManyToManyField(Genre)
 
+    def __str__(self):
+        if self.spotify:
+            return self.spotify_name
 
-class Track(models.Model):
 
-    spotify_id = models.CharField(max_length=36)
-    identifiers = models.ManyToManyField(Identifier)
-    composers = models.ManyToManyField(Composer)
-    genres = models.ManyToManyField(Genre)
+class SpotifyProfile(models.Model):
+
+    id = models.CharField(max_length=20, primary_key=True, db_index=True)
 
     acousticiness = models.FloatField()
     durations = models.DurationField()
@@ -99,30 +48,71 @@ class Track(models.Model):
     tempo = models.FloatField()
     valence = models.FloatField()
 
+    def __str__(self):
+        return id
+
+
+class Track(models.Model):
+
+    composers = models.ManyToManyField(Composer)
+    genres = models.ManyToManyField(Genre)
+    spotify = models.BooleanField(default=False)
+    spotify_durration = models.DurationField(blank=True)
+    spotify_id = models.CharField(max_length=20, blank=True,
+                                  unique=True, db_index=True)
+    spotify_name = models.CharField(max_length=200, blank=True)
+    spotify_profile = models.OneToOneField(SpotifyProfile)
+
+    def __str__(self):
+        if self.spotify:
+            return self.spotify_name
+
 
 class Album(models.Model):
 
-    spotify_id = models.CharField(max_length=36)
-    identifiers = models.ManyToManyField(Identifier)
-    types = models.ManyToManyField(AlbumType)
-    genres = models.ManyToManyField(Genre)
+    SPOTIFY_TYPE_CHOICES = (
+        ('album', 'album'),
+        ('single', 'single'),
+        ('compilation', 'compilation')
+    )
     composers = models.ManyToManyField(Composer)
-    tracks = models.ManyToManyField(Track)
-    release_dates = models.ManyToManyField(ReleaseDate)
+    genres = models.ManyToManyField(Genre)
+    spotify = models.BooleanField(default=False)
+    spotify_id = models.CharField(max_length=20, blank=True, unique=True,
+                                  db_index=True)
+    spotify_name = models.CharField(max_length=200, blank=True)
+    spotify_release = models.DateField(blank=True)
+    spotify_type = models.CharField(max_length=11, blank=True,
+                                    choices=SPOTIFY_TYPE_CHOICES)
+
+    def __str__(self):
+        if self.spotify:
+            return self.spotify_name
 
 
 class Playlist(models.Model):
 
-    spotify_id = models.CharField(max_length=36)
-    identifiers = models.ManyToManyField(Identifier)
-    domain = models.CharField(max_length=20)
-    description = models.TextField(max_length=1500)
-    version = models.CharField(max_length=20)
-    tracks = models.ManyToManyField(Track)
+    domain = models.CharField(max_length=7, choices=DOMAIN_CHOICES,
+                              blank=False)
+    domain_id = models.CharField(max_length=100, blank=False)
+    title = models.CharField(max_length=250, blank=True)
+    summary = models.TextField(max_length=2500, blank=True)
+
+    class Meta:
+        unique_together = ('domain', 'domain_id')
+
+    def __str__(self):
+        return '{}: {}'.format(self.domain, self.domain_id)
 
 
 class User(models.Model):
 
-    spotify_id = models.CharField(max_length=36)
-    identifiers = models.ManyToManyField(Identifier)
-    playlists = models.ManyToManyField(Playlist)
+    spotify = models.BooleanField(default=False)
+    spotify_id = models.CharField(max_length=20, blank=True,
+                                  unique=True, db_index=True)
+    spotify_name = models.CharField(max_length=200, blank=True)
+    tracks = models.ManyToManyField(Track)
+
+    def __str__(self):
+        if self.spotify:
+            return self.spotify_name
