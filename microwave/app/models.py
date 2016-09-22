@@ -5,7 +5,8 @@ DOMAIN_CHOICES = (('spotify', 'spotify'),)
 
 class Genre(models.Model):
 
-    domain = models.CharField(max_length=20, choices=DOMAIN_CHOICES,
+    domain = models.CharField(max_length=100,
+                              choices=DOMAIN_CHOICES,
                               blank=False)
     name = models.CharField(max_length=50, blank=False)
 
@@ -18,15 +19,15 @@ class Genre(models.Model):
 
 class Composer(models.Model):
 
-    spotify = models.BooleanField(default=False)
-    spotify_id = models.CharField(max_length=20, blank=True, unique=True,
+    genres = models.ManyToManyField(Genre)
+    spotify_id = models.CharField(max_length=100,
+                                  blank=True,
+                                  unique=True,
                                   db_index=True)
     spotify_name = models.CharField(max_length=200, blank=True)
-    genres = models.ManyToManyField(Genre)
 
     def __str__(self):
-        if self.spotify:
-            return self.spotify_name
+        return self.spotify_name if self.spotify_name else ''
 
 
 class Collection(models.Model):
@@ -38,8 +39,10 @@ class Collection(models.Model):
     )
     composers = models.ManyToManyField(Composer)
     genres = models.ManyToManyField(Genre)
-    spotify = models.BooleanField(default=False)
-    spotify_id = models.CharField(max_length=20, blank=True, unique=True,
+    publisher = models.CharField(max_length=250, blank=True)
+    spotify_id = models.CharField(max_length=100,
+                                  blank=True,
+                                  unique=True,
                                   db_index=True)
     spotify_name = models.CharField(max_length=200, blank=True)
     spotify_release = models.DateField(blank=True)
@@ -47,13 +50,12 @@ class Collection(models.Model):
                                     choices=SPOTIFY_TYPE_CHOICES)
 
     def __str__(self):
-        if self.spotify:
-            return self.spotify_name
+        return self.spotify_name if self.spotify_name else ''
 
 
 class SpotifyProfile(models.Model):
 
-    id = models.CharField(max_length=20, primary_key=True, db_index=True)
+    id = models.CharField(max_length=100, primary_key=True, db_index=True)
 
     acousticiness = models.FloatField()
     durations = models.DurationField()
@@ -78,30 +80,33 @@ class Track(models.Model):
 
     collections = models.ManyToManyField(Collection)
     composers = models.ManyToManyField(Composer)
-    genres = models.ManyToManyField(Genre)
-    spotify = models.BooleanField(default=False)
-    spotify_durration = models.DurationField(blank=True)
-    spotify_id = models.CharField(max_length=20, blank=True,
-                                  unique=True, db_index=True)
+    spotify_duration = models.DurationField(blank=True)
+    spotify_id = models.CharField(max_length=100,
+                                  blank=True,
+                                  unique=True,
+                                  db_index=True)
     spotify_name = models.CharField(max_length=200, blank=True)
-    spotify_profile = models.OneToOneField(SpotifyProfile)
+    spotify_profile = models.OneToOneField(SpotifyProfile, blank=True)
 
     def __str__(self):
-        if self.spotify:
-            return self.spotify_name
+        return self.spotify_name if self.spotify_name else ''
 
 
 class Playlist(models.Model):
 
-    domain = models.CharField(max_length=7, choices=DOMAIN_CHOICES,
+    domain = models.CharField(max_length=7,
+                              choices=DOMAIN_CHOICES,
                               blank=False)
     domain_id = models.CharField(max_length=100, blank=False)
     title = models.CharField(max_length=250, blank=True)
-    summary = models.TextField(max_length=2500, blank=True)
+    version = models.TextField(max_length=1000, blank=True)
     tracks = models.ManyToManyField(Track)
 
     class Meta:
         unique_together = ('domain', 'domain_id')
+
+    def count(self):
+        return len(self.tracks)
 
     def __str__(self):
         return '{}: {}'.format(self.domain, self.domain_id)
@@ -109,9 +114,10 @@ class Playlist(models.Model):
 
 class User(models.Model):
 
-    spotify = models.BooleanField(default=False)
-    spotify_id = models.CharField(max_length=20, blank=True,
-                                  unique=True, db_index=True)
+    spotify_id = models.CharField(max_length=100,
+                                  blank=True,
+                                  unique=True,
+                                  db_index=True)
     spotify_name = models.CharField(max_length=200, blank=True)
     tracks = models.ManyToManyField(Track)
 
