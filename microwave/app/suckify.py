@@ -91,54 +91,65 @@ def make_track(spotify_track):
     artists = dict((a['id'], a) for a in spotify_track['artists'])
     return track, spotify_track['album'], artists
 
+def make_profile(spotify_track, spotify_profile):
+
+    # TODO: This!
+    pass
+
 
 def update_genres(*dicts):
 
     # collect genres from dictionaries
     spotify_genres = set()
-    for d in dicts.values():
-        spotify_genres.update(d['genres'])
+    for d in dicts:
+        for v in d.values():
+            spotify_genres.update(v['genres'])
     # bulk get existing genre dict from django
     existing_genres = models.Genre.objects.filter(domain='spotify',
                                                   name__in=spotify_genres)
-    id_existing = dict((g.name, g) for g in existing_genres)
+    name_existing = dict((g.name, g) for g in existing_genres)
 
     # create new genres
-    new_genre_names = set(id_existing.keys()).difference(spotify_genres)
+    new_genre_names = set(spotify_genres).difference(name_existing.keys())
     if new_genre_names:
         new_genres = []
         for new_genre in new_genre_names:
             new_genres.append(models.Genre(domain='spotify', name=new_genre))
         if new_genres:
-            new_genres = models.Genre.objects.bulk_create(new_genres)
-            existing_genres.update(dict((g.name, g) for g in new_genres))
-
-    return existing_genres
+            models.Genre.objects.bulk_create(new_genres)
+            # appearantly after doing a bulk create django doesn't know the
+            # objects hasve been written to the db.
+            new_genres = models.Genre.objects.filter(domain='spotify',
+                                                     name__in=new_genre_names)
+            name_existing.update(dict((g.name, g) for g in new_genres))
+    return name_existing
 
 
 def update_composers_collections(artist_dict, album_dict, genres):
 
     # bulk create new composers
     composers = [make_composer(a) for a in artist_dict.values()]
-    composers = models.Composer.objects.bulk_create(composers)
-    composer_dict = dict((c.spotify_id, c) for c in composers)
+    models.Composer.objects.bulk_create(composers)
+    comps = models.Composer.objects.filter(spotify_id__in=artist_dict.keys())
+    composer_dict = dict((c.spotify_id, c) for c in comps)
 
     # bulk create new collections
-    collections = [make_collection(a) for a in album_dict]
+    collections = [make_collection(a) for a in album_dict.values()]
     collections = models.Collection.objects.bulk_create(collections)
-    collection_dict = dict((c.spotify_id, c) for c in collections)
+    colls = models.Collection.objects.filter(spotify_id__in=album_dict.keys())
+    collection_dict = dict((c.spotify_id, c) for c in colls)
 
     # attach genres to new composers
     for spotify_id, spotify_artist in artist_dict.items():
-        composer = composers[spotify_id]
-        composer.genres.set(*[genres[n] for n in composer['genres']])
+        composer = composer_dict[spotify_id]
+        composer.genres.set([genres[n] for n in spotify_artist['genres']])
 
     # attach composers and genres to new collections
-    for spotify_id, album in album_dict.values():
+    for spotify_id, spotify_album in album_dict.items():
         collection = collection_dict[spotify_id]
-        collection.genres.set(*[genres[n] for n in collection['genres']])
-        album_comp_ids = [a['artists']['id'] for a in collection['artists']]
-        collection.artists.set(*[composer_dict[i] for i in album_comp_ids])
+        collection.genres.set([genres[n] for n in spotify_album['genres']])
+        album_comp_ids = [a['id'] for a in spotify_album['artists']]
+        collection.composers.set([composer_dict[i] for i in album_comp_ids])
 
     # return happy new items
     return composer_dict, collection_dict
@@ -171,12 +182,15 @@ def assemble_composers_collections(artist_dict, album_dict, spotipy):
     new_artists = spotipy.artists(new_artist_ids)['artists']
     new_artists = dict((a['id'], a) for a in new_artists)
 
+    # upodate genres, composers, and collections
     genres = update_genres(new_artists, new_albums)
-    new_comp, new_coll = update_composers_collections(artist_dict,
-                                                      album_dict,
-                                                      genres)
-    return id_composers.update(new_comp), id_collections.update(new_coll)
-
+    new_comps, new_colls = update_composers_collections(new_artists,
+                                                        new_albums,
+                                                        genres)
+    # merge old and new
+    id_composers.update(new_comps)
+    id_collections.update(new_colls)
+    return id_composers, id_collections
 
 
 def get_new_spotify(kind, ids, spotipy):
@@ -193,6 +207,19 @@ def get_new_spotify(kind, ids, spotipy):
     return new, genres
 
 
+def update_profiles(spotify_tracks, spotipy):
+
+    spotify_profiles = spotipy.audio_features(spotify_tracks.keys())
+    spotipy_profiles = dict((p.id, p) for p in spotify_profiles)
+    profiles = []
+    for profile_id, spotify_profile in spotipy_profiles.items():
+        profile = make_profile(spotify_tracks[profile_id],
+                               spotipy_profiles[profile_id])
+        profiles.append(profile)
+    profiles = models.SpotifyProfile.objects.bulk_create(profiles)
+    return models.SpotifyProfile.objects.in_bulk([p.id for p in profiles])
+
+
 def trackify(spotify_tracks, spotipy):
 
     # returns a dictionary of spotify track ids to microwave/django
@@ -207,16 +234,20 @@ def trackify(spotify_tracks, spotipy):
         spotify_albums[spotify_album['id']] = spotify_album
 
     new_tracks = models.Track.objects.bulk_create(new_tracks)
-    id_tracks = dict((t.spotify_id, t) for t in new_tracks)
+    new_tracks = dict((track.spotify_id, track) for track in new_tracks)
+    # bulk created items do not include a primary key and therefore must
+    # be fetched after creation
+    new_tracks = models.Track.objects.filter(spotify_id__in=new_tracks.keys())
+    new_tracks = dict((t.spotify_id, t) for t in new_tracks)
     composers, collections = assemble_composers_collections(spotify_artists,
                                                             spotify_albums,
                                                             spotipy)
+    profiles = update_profiles(spotify_tracks, spotipy)
     for spotify_id, spotify_track in spotify_tracks.items():
         track = new_tracks[spotify_id]
         artist_ids = [a['id'] for a in spotify_track['artists']]
-        track.composers.set(*[composers[c] for c in artist_ids])
+        track.composers.set([composers[c] for c in artist_ids])
         track.album = collections[spotify_track['album']['id']]
-        track.save()
     return new_tracks
 
 
@@ -266,7 +297,7 @@ def get_user_playlists(user, spotipy):
             if new_spotify:
                 new_tracks = trackify(new_spotify, spotipy)
                 id_existing.update(new_tracks)
-            playlist.tracks.set(*existing_tracks.values())
+            playlist.tracks.set(existing_tracks.values())
             playlists.append(playlist)
     return playlists
 

@@ -32,8 +32,6 @@ class Composer(models.Model):
     other sources are implemented. Currently spotify is the only
     metadata source so they can be set to true here.
     """
-    spotify_created = models.DateTimeField(auto_now_add=True, blank=True)
-    spotify_updated = models.DateTimeField(auto_now=True, blank=True)
 
     def __str__(self):
         return self.spotify_name if self.spotify_name else ''
@@ -75,7 +73,7 @@ class SpotifyProfile(models.Model):
     id = models.CharField(max_length=100, primary_key=True, db_index=True)
 
     acousticiness = models.FloatField()
-    durations = models.DurationField()
+    duration = models.DurationField()
     dancibility = models.FloatField()
     energy = models.FloatField()
     instrumentalness = models.FloatField()
