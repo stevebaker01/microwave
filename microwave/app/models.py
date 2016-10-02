@@ -72,9 +72,9 @@ class SpotifyProfile(models.Model):
 
     id = models.CharField(max_length=100, primary_key=True, db_index=True)
 
-    acousticiness = models.FloatField()
+    acousticness = models.FloatField()
+    danceability = models.FloatField()
     duration = models.DurationField()
-    dancibility = models.FloatField()
     energy = models.FloatField()
     instrumentalness = models.FloatField()
     key = models.PositiveSmallIntegerField()
@@ -90,7 +90,7 @@ class SpotifyProfile(models.Model):
     updated = models.DateTimeField(auto_now=True, blank=True)
 
     def __str__(self):
-        return id
+        return self.id
 
 
 class Track(models.Model):

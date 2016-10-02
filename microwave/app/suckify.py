@@ -1,14 +1,31 @@
+import math
 from . import models
 from datetime import timedelta
 from dateutil.parser import parse as parse_date
 
 # TODO: label support for albums
 # TODO: external id support (which objects?)
+# TODO: threading
 
 TRACK_FIELDS = ['album', 'artists', 'duration_ms', 'external_ids',
                 'external_urls', 'href', 'id', 'name', 'popularity', 'uri']
 LIMITS = {'user_playlists': 50,
           'user_playlist_tracks': 100}
+
+
+def chunkify(input_list, chunk_size):
+
+    input_list = sorted(input_list)
+    num_chunks = len(input_list) // chunk_size
+    last_chunk = len(input_list) % chunk_size
+    chunks = []
+    for i in range(num_chunks):
+        bottom = i * chunk_size
+        top = bottom + chunk_size
+        chunks.append(input_list[bottom:top])
+    if last_chunk:
+        chunks.append(input_list[num_chunks*chunk_size:last_chunk])
+    return chunks
 
 
 def get_user(spotipy):
@@ -62,6 +79,19 @@ def get_genres(spotify_genres):
     return id_existing.update(dict((g.name, g) for g in new_genres))
 
 
+def fetch_existing(ids, thing_type, id_field='id'):
+
+    chunk_size = 50
+    chunks = chunkify(ids, chunk_size=chunk_size)
+    things = []
+    for chunk in chunks:
+        filter = {'{}__in'.format(id_field): chunk}
+        cls = getattr(models, thing_type.title())
+        these = [this for this in cls.objects.filter(**filter)]
+        things.extend(these)
+    return dict((getattr(thing, id_field), thing) for thing in things)
+
+
 def make_composer(artist):
 
     composer = models.Composer(spotify_id=artist['id'])
@@ -91,10 +121,20 @@ def make_track(spotify_track):
     artists = dict((a['id'], a) for a in spotify_track['artists'])
     return track, spotify_track['album'], artists
 
+
 def make_profile(spotify_track, spotify_profile):
 
-    # TODO: This!
-    pass
+    # trim fat
+    skip = ['id', 'analysis_url', 'track_href', 'type', 'uri']
+    profile = models.SpotifyProfile(id=spotify_profile['id'])
+    profile.popularity = spotify_track['popularity']
+    for attr in spotify_profile:
+        if attr == 'duration_ms':
+            duration_ms = spotify_profile['duration_ms']
+            profile.duration = timedelta(milliseconds=duration_ms)
+        else:
+            setattr(profile, attr, spotify_profile[attr])
+    return profile
 
 
 def update_genres(*dicts):
@@ -129,15 +169,18 @@ def update_composers_collections(artist_dict, album_dict, genres):
 
     # bulk create new composers
     composers = [make_composer(a) for a in artist_dict.values()]
-    models.Composer.objects.bulk_create(composers)
-    comps = models.Composer.objects.filter(spotify_id__in=artist_dict.keys())
-    composer_dict = dict((c.spotify_id, c) for c in comps)
+    composers = models.Composer.objects.bulk_create(composers)
+    comp_ids = [composer.spotify_id for composer in composers]
+    composers = models.Composer.objects.filter(spotify_id__in=comp_ids)
+    composer_dict = dict((c.spotify_id, c) for c in composers)
 
     # bulk create new collections
     collections = [make_collection(a) for a in album_dict.values()]
     collections = models.Collection.objects.bulk_create(collections)
-    colls = models.Collection.objects.filter(spotify_id__in=album_dict.keys())
-    collection_dict = dict((c.spotify_id, c) for c in colls)
+    coll_ids = [collection.spotify_id for collection in collections]
+    collections = models.Collection.objects.filter(spotify_id__in=coll_ids)
+    collection_dict = dict((c.spotify_id, c) for c in collections)
+
 
     # attach genres to new composers
     for spotify_id, spotify_artist in artist_dict.items():
@@ -155,6 +198,20 @@ def update_composers_collections(artist_dict, album_dict, genres):
     return composer_dict, collection_dict
 
 
+def fetch_spotify(ids, thing_type, spotipy):
+
+    size = 20
+    chunks = chunkify(ids, size)
+    things = []
+    print(thing_type)
+    for chunk in chunks:
+        plural = '{}s'.format(thing_type)
+        things.extend(getattr(spotipy, plural)(chunk)[plural])
+        print(chunk)
+        print(len(things))
+        print()
+    return dict((thing['id'], thing) for thing in things)
+
 def assemble_composers_collections(artist_dict, album_dict, spotipy):
 
     # fetch existing (full) collection objects fron django
@@ -163,11 +220,12 @@ def assemble_composers_collections(artist_dict, album_dict, spotipy):
     # fetch new (full) collection objects from spotify
     id_collections = dict((c['id'], c) for c in existing_collections)
     new_album_ids = set(album_dict.keys()).difference(id_collections.keys())
-    new_albums = spotipy.albums(new_album_ids)['albums']
-    new_albums = dict((a['id'], a) for a in new_albums)
-    new_album_artist_ids = set()
+    new_albums = fetch_spotify(new_album_ids, 'album', spotipy)
+    # new_albums = spotipy.albums(new_album_ids)['albums']
+    # new_albums = dict((a['id'], a) for a in new_albums)
 
     # collect new album artists
+    new_album_artist_ids = set()
     for new_album in new_albums.values():
         for artist in new_album['artists']:
             new_album_artist_ids.add(artist['id'])
@@ -179,8 +237,9 @@ def assemble_composers_collections(artist_dict, album_dict, spotipy):
     # fetch new (full) artists from spotify
     new_artist_ids = set(artist_dict.keys()).difference(id_composers.keys())
     new_artist_ids = new_artist_ids.union(new_album_artist_ids)
-    new_artists = spotipy.artists(new_artist_ids)['artists']
-    new_artists = dict((a['id'], a) for a in new_artists)
+    new_artists = fetch_spotify(new_artist_ids, 'artist', spotipy)
+    # new_artists = spotipy.artists(new_artist_ids)['artists']
+    # new_artists = dict((a['id'], a) for a in new_artists)
 
     # upodate genres, composers, and collections
     genres = update_genres(new_artists, new_albums)
@@ -210,14 +269,15 @@ def get_new_spotify(kind, ids, spotipy):
 def update_profiles(spotify_tracks, spotipy):
 
     spotify_profiles = spotipy.audio_features(spotify_tracks.keys())
-    spotipy_profiles = dict((p.id, p) for p in spotify_profiles)
+    spotify_profiles = dict((p['id'], p) for p in spotify_profiles)
     profiles = []
-    for profile_id, spotify_profile in spotipy_profiles.items():
+    for profile_id, spotify_profile in spotify_profiles.items():
+        spotify_profile['signature'] = spotify_profile.pop('time_signature')
         profile = make_profile(spotify_tracks[profile_id],
-                               spotipy_profiles[profile_id])
+                               spotify_profile)
         profiles.append(profile)
     profiles = models.SpotifyProfile.objects.bulk_create(profiles)
-    return models.SpotifyProfile.objects.in_bulk([p.id for p in profiles])
+    return dict((profile.id, profile) for profile in profiles)
 
 
 def trackify(spotify_tracks, spotipy):
@@ -237,6 +297,8 @@ def trackify(spotify_tracks, spotipy):
     new_tracks = dict((track.spotify_id, track) for track in new_tracks)
     # bulk created items do not include a primary key and therefore must
     # be fetched after creation
+
+
     new_tracks = models.Track.objects.filter(spotify_id__in=new_tracks.keys())
     new_tracks = dict((t.spotify_id, t) for t in new_tracks)
     composers, collections = assemble_composers_collections(spotify_artists,
@@ -247,7 +309,9 @@ def trackify(spotify_tracks, spotipy):
         track = new_tracks[spotify_id]
         artist_ids = [a['id'] for a in spotify_track['artists']]
         track.composers.set([composers[c] for c in artist_ids])
-        track.album = collections[spotify_track['album']['id']]
+        track.collections.add(collections[spotify_track['album']['id']])
+        track.spotify_profile = profiles[spotify_id]
+        track.save()
     return new_tracks
 
 
@@ -297,7 +361,8 @@ def get_user_playlists(user, spotipy):
             if new_spotify:
                 new_tracks = trackify(new_spotify, spotipy)
                 id_existing.update(new_tracks)
-            playlist.tracks.set(existing_tracks.values())
+            et = [t for t in id_existing.values()]
+            playlist.tracks.set(et)
             playlists.append(playlist)
     return playlists
 
