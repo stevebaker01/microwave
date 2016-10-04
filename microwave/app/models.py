@@ -63,6 +63,8 @@ class Collection(models.Model):
     """
     spotify_created = models.DateTimeField(auto_now_add=True, blank=True)
     spotify_updated = models.DateTimeField(auto_now=True, blank=True)
+    # Duplicate albums?? Look for dupicate upc codes on collections
+    upc = models.CharField(max_length=15, blank=True)
 
     def __str__(self):
         return self.spotify_name if self.spotify_name else ''
@@ -97,6 +99,8 @@ class Track(models.Model):
 
     collections = models.ManyToManyField(Collection)
     composers = models.ManyToManyField(Composer)
+    # Duplicate tracks?? Look for dupicate isrc codes on tracks
+    isrc = models.CharField(max_length=12, blank=True)
     spotify_duration = models.DurationField(blank=True)
     spotify_id = models.CharField(max_length=100,
                                   blank=True,

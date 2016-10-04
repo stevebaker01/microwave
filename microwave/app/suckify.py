@@ -2,9 +2,11 @@ from . import models
 from datetime import timedelta
 from dateutil.parser import parse as parse_date
 
-# TODO: label support for albums
-# TODO: external id support (which objects?)
+
+# TODO: optimize limits for albums, artists, audio features
+# TODO: Resolve duplicate upc on collections and isrc on tracks weirdness
 # TODO: threading
+# TODO: No album labels or album genres (spotify or spotipy bug?)
 
 TRACK_FIELDS = ['album', 'artists', 'duration_ms', 'external_ids',
                 'external_urls', 'href', 'id', 'name', 'popularity', 'uri']
@@ -31,7 +33,8 @@ def get_user(spotipy):
 
     spotify_user = spotipy.current_user()
     this_user, \
-        created = models.User.objects.get_or_create(spotify_id=spotify_user['id'])
+        created = models.User.objects.get_or_create(spotify_id=
+                                                        spotify_user['id'])
     this_user.spotify_name = spotify_user['display_name']
     this_user.spotify = True
     this_user.save()
@@ -92,7 +95,9 @@ def make_collection(album):
     collection.spotify_name = album['name']
     collection.label = album['label']
     collection.spotify_release = parse_date(album['release_date'])
-    collection.spotify_type = album['type']
+    collection.spotify_type = album['album_type']
+    for source, eid in album['external_ids'].items():
+        setattr(collection, source, eid)
     return collection
 
 
@@ -105,6 +110,8 @@ def make_track(spotify_track):
                          spotify_duration=duration)
     # separate artists for later batching
     artists = dict((a['id'], a) for a in spotify_track['artists'])
+    for source, eid in spotify_track['external_ids'].items():
+        setattr(track, source, eid.replace('-', ''))
     return track, spotify_track['album'], artists
 
 
@@ -156,7 +163,6 @@ def update_composers_collections(artist_dict,
                                  album_dict,
                                  existing_collection_dict,
                                  genres):
-
 
     # bulk create new composers
     composers = [make_composer(a) for a in artist_dict.values()]
@@ -242,20 +248,6 @@ def assemble_composers_collections(artist_dict, album_dict, spotipy):
     return id_composers, id_collections
 
 
-def get_new_spotify(kind, ids, spotipy):
-
-    # batch get full objects from spotify
-    new_spotifys = getattr(spotipy, kind)(ids)
-    new_spotifys = new_spotifys[kind] if kind in new_spotifys else []
-    new = {}
-    genres = []
-    for this in new_spotifys:
-        # collect required genres
-        genres.extend(this['genres'] if 'genres' in new_spotifys else [])
-        new[this['id']] = this
-    return new, genres
-
-
 def update_profiles(spotify_tracks, spotipy):
 
     spotify_profiles = fetch_spotify(spotify_tracks.keys(),
@@ -324,6 +316,7 @@ def get_user_playlists(user, spotipy):
 
     playlists = []
     for spotify_playlist in spotify_playlists:
+        print(spotify_playlist['name'])
         args = {'domain': 'spotify', 'domain_id': spotify_playlist['id']}
         playlist, create = models.Playlist.objects.get_or_create(**args)
         if create or playlist.version != spotify_playlist['snapshot_id']:
@@ -354,6 +347,7 @@ def get_user_playlists(user, spotipy):
             et = [t for t in id_existing.values()]
             playlist.tracks.set(et)
             playlists.append(playlist)
+            playlist.save()
     return playlists
 
 

@@ -4,6 +4,7 @@
     <list default="true" id="ae024f6d-6994-4e3f-8ad8-999ab9ddc8d5" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/dictionaries/stevebaker.xml" afterPath="$PROJECT_DIR$/.idea/dictionaries/stevebaker.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/microwave/app/models.py" afterPath="$PROJECT_DIR$/microwave/app/models.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/microwave/app/suckify.py" afterPath="$PROJECT_DIR$/microwave/app/suckify.py" />
     </list>
     <ignored path="spotipy_oauth_demo.iws" />
@@ -44,8 +45,8 @@
       <file leaf-file-name="models.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/microwave/app/models.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="690">
-              <caret line="88" column="65" selection-start-line="88" selection-start-column="65" selection-end-line="88" selection-end-column="65" />
+            <state relative-caret-position="-697">
+              <caret line="66" column="40" selection-start-line="66" selection-start-column="40" selection-end-line="66" selection-end-column="40" />
               <folding>
                 <element signature="e#0#28#0" expanded="true" />
               </folding>
@@ -76,8 +77,8 @@
       <file leaf-file-name="suckify.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/microwave/app/suckify.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="191">
-              <caret line="261" column="54" selection-start-line="261" selection-start-column="54" selection-end-line="261" selection-end-column="54" />
+            <state relative-caret-position="330">
+              <caret line="346" column="50" selection-start-line="346" selection-start-column="50" selection-end-line="346" selection-end-column="50" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -618,7 +619,14 @@
       <option name="project" value="LOCAL" />
       <updated>1475547435117</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="cleanup">
+      <created>1475560179769</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1475560179769</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TodoView">
@@ -644,9 +652,9 @@
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.49288702" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.4" sideWeight="0.49288702" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="manage.py@spotipy_oauth_demo" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32913387" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="manage.py@spotipy_oauth_demo" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32913387" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -672,10 +680,18 @@
     <MESSAGE value="tracqusition done, starting profile" />
     <MESSAGE value="better but still consistently dropping inconsistent composers" />
     <MESSAGE value="beginning to end data ingestion :)" />
-    <option name="LAST_COMMIT_MESSAGE" value="beginning to end data ingestion :)" />
+    <MESSAGE value="cleanup" />
+    <option name="LAST_COMMIT_MESSAGE" value="cleanup" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/microwave/app/suckify.py</url>
+          <line>335</line>
+          <option name="timeStamp" value="259" />
+        </line-breakpoint>
+      </breakpoints>
       <breakpoints-dialog>
         <breakpoints-dialog />
       </breakpoints-dialog>
@@ -686,7 +702,7 @@
           </properties>
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="259" />
+      <option name="time" value="260" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -1024,8 +1040,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/microwave/app/models.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="690">
-          <caret line="88" column="65" selection-start-line="88" selection-start-column="65" selection-end-line="88" selection-end-column="65" />
+        <state relative-caret-position="-697">
+          <caret line="66" column="40" selection-start-line="66" selection-start-column="40" selection-end-line="66" selection-end-column="40" />
           <folding>
             <element signature="e#0#28#0" expanded="true" />
           </folding>
@@ -1034,8 +1050,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/microwave/app/suckify.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="191">
-          <caret line="261" column="54" selection-start-line="261" selection-start-column="54" selection-end-line="261" selection-end-column="54" />
+        <state relative-caret-position="330">
+          <caret line="346" column="50" selection-start-line="346" selection-start-column="50" selection-end-line="346" selection-end-column="50" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
           </folding>
