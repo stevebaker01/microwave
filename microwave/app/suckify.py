@@ -1,28 +1,10 @@
-from pprint import pprint
 from . import models
 from datetime import timedelta
 from dateutil.parser import parse as parse_date
 
-# album: 6BJbi298cful6Wzzgfk3tj
-# artist: 29vXvRArvRnl6mD4jy1C5R
-
-phantoms = ['14u4KXVp0iXQil79EpxXGc',
-            '29vXvRArvRnl6mD4jy1C5R',
-            '2fBURuq7FrlH6z5F92mpOl',
-            '38DX4hQVvPBs3PThDIAK11',
-            '4FCGgZrVQtcbDFEap3OAb2',
-            '4M84umUNRbZy1mJleyyRM9',
-            '4e3dkPcyps1LVGvdRcqw6Z',
-            '4lybctGarwN1hdctv433Js',
-            '6DFJfhZxwWe1yKQvRDJmdl',
-            '7vbswk78geSJYL92kHe7jU']
-
-
 # TODO: label support for albums
 # TODO: external id support (which objects?)
 # TODO: threading
-
-ABSENT = set()
 
 TRACK_FIELDS = ['album', 'artists', 'duration_ms', 'external_ids',
                 'external_urls', 'href', 'id', 'name', 'popularity', 'uri']
@@ -39,25 +21,9 @@ def chunkify(input_list, chunk_size):
         for i in range(chunk_size):
             try:
                 this_chunk.add(input_list.pop())
-            except KeyError:
-                break
             except IndexError:
                 break
         chunks.append(this_chunk)
-    return chunks
-
-
-    input_list = sorted(input_list)
-    num_chunks = len(input_list) // chunk_size
-    last_chunk = len(input_list) % chunk_size
-    chunks = []
-    for i in range(num_chunks):
-        bottom = i * chunk_size
-        top = bottom + chunk_size
-        chunks.append(input_list[bottom:top])
-    if last_chunk:
-        bottom = num_chunks * chunk_size
-        chunks.append(input_list[bottom:bottom+last_chunk+1])
     return chunks
 
 
@@ -124,8 +90,7 @@ def make_collection(album):
 
     collection = models.Collection(spotify_id=album['id'])
     collection.spotify_name = album['name']
-    # TODO: ...
-    # collection.label = artist['label']
+    collection.label = album['label']
     collection.spotify_release = parse_date(album['release_date'])
     collection.spotify_type = album['type']
     return collection
@@ -220,31 +185,8 @@ def update_composers_collections(artist_dict,
         collection = collection_dict[spotify_id]
         collection.genres.set([genres[n] for n in spotify_album['genres']])
         album_comp_ids = [a['id'] for a in spotify_album['artists']]
-
-        diffs = set(album_comp_ids).difference(composer_dict.keys())
-        """
-        if diffs:
-            #print('        {}'.format(diffs))
-            for diff in diffs:
-                in_artist_dict = diff in artist_dict
-                in_composers = diff in [c.spotify_id for c in composers]
-                in_composer_dict = diff in composer_dict
-                #print("'{} is in 'artist_dict': {}".format(diff, in_artist_dict))
-                print("'{} is in 'composers': {}".format(diff, in_composers))
-                print("'{} is in 'composers_dict': {}".format(diff, in_composer_dict))
-        """
-        these = set()
-        for i in album_comp_ids:
-            try:
-                these.add(composer_dict[i])
-            except KeyError:
-                ABSENT.add(i)
-                print(len(ABSENT))
-                print(sorted(ABSENT))
-                print()
-
+        these = set([composer_dict[i] for i in album_comp_ids])
         collection.composers.set(these)
-        # collection.composers.set([composer_dict[i] for i in album_comp_ids])
 
     # return happy new items
     return composer_dict, collection_dict
@@ -255,7 +197,6 @@ def fetch_spotify(ids, thing_type, spotipy):
     size = 20
     chunks = chunkify(ids, size)
     things = []
-    print(thing_type)
     plural = ('{}' if thing_type.endswith('s') else '{}s').format(thing_type)
     for chunk in chunks:
         these = getattr(spotipy, plural)(chunk)
@@ -265,11 +206,8 @@ def fetch_spotify(ids, thing_type, spotipy):
             things.extend(these)
     return dict((thing['id'], thing) for thing in things)
 
+
 def assemble_composers_collections(artist_dict, album_dict, spotipy):
-
-
-    global phantoms
-    inter_artist_dict = set(phantoms).intersection(artist_dict.keys())
 
     # fetch existing (full) collection objects fron django
     existing_collections = models.Collection.objects.filter(spotify_id__in=
@@ -285,20 +223,12 @@ def assemble_composers_collections(artist_dict, album_dict, spotipy):
         for artist in new_album['artists']:
             required_artist_ids.add(artist['id'])
 
-    inter_required_artists = set(phantoms).intersection(required_artist_ids)
-
-    # fetch existing artist objects from django
-    # is it getting all composr
     existing_composers = models.Composer.objects.filter(spotify_id__in=
                                                         required_artist_ids)
     id_composers = dict((c.spotify_id, c) for c in existing_composers)
-    inter_composers = set(phantoms).intersection(id_composers.keys())
     # fetch new (full) artists from spotify
-    new_artist_ids_test = set(id_composers.keys()).difference(required_artist_ids)
     new_artist_ids = set(required_artist_ids).difference(id_composers.keys())
-    inter_new_artist_ids = set(phantoms).intersection(new_artist_ids)
     new_artists = fetch_spotify(new_artist_ids, 'artist', spotipy)
-    inter_new_artists = set(phantoms).intersection(new_artists.keys())
     # upodate genres, composers, and collections
     genres = update_genres(new_artists, new_albums)
     new_comps, new_colls = update_composers_collections(new_artists,
@@ -358,7 +288,6 @@ def trackify(spotify_tracks, spotipy):
     new_tracks = dict((track.spotify_id, track) for track in new_tracks)
     # bulk created items do not include a primary key and therefore must
     # be fetched after creation
-
 
     new_tracks = models.Track.objects.filter(spotify_id__in=new_tracks.keys())
     new_tracks = dict((t.spotify_id, t) for t in new_tracks)

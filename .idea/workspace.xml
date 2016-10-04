@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ae024f6d-6994-4e3f-8ad8-999ab9ddc8d5" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/dictionaries/stevebaker.xml" afterPath="$PROJECT_DIR$/.idea/dictionaries/stevebaker.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/microwave/app/models.py" afterPath="$PROJECT_DIR$/microwave/app/models.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/microwave/app/suckify.py" afterPath="$PROJECT_DIR$/microwave/app/suckify.py" />
     </list>
     <ignored path="spotipy_oauth_demo.iws" />
@@ -44,7 +44,7 @@
       <file leaf-file-name="models.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/microwave/app/models.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1320">
+            <state relative-caret-position="690">
               <caret line="88" column="65" selection-start-line="88" selection-start-column="65" selection-end-line="88" selection-end-column="65" />
               <folding>
                 <element signature="e#0#28#0" expanded="true" />
@@ -76,10 +76,10 @@
       <file leaf-file-name="suckify.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/microwave/app/suckify.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="150">
-              <caret line="155" column="13" selection-start-line="155" selection-start-column="13" selection-end-line="155" selection-end-column="13" />
+            <state relative-caret-position="191">
+              <caret line="261" column="54" selection-start-line="261" selection-start-column="54" selection-end-line="261" selection-end-column="54" />
               <folding>
-                <element signature="e#0#25#0" expanded="true" />
+                <element signature="e#0#20#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -611,7 +611,14 @@
       <option name="project" value="LOCAL" />
       <updated>1475475144849</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="beginning to end data ingestion :)">
+      <created>1475547435116</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1475547435117</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TodoView">
@@ -637,7 +644,7 @@
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.4" sideWeight="0.49288702" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.49288702" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="manage.py@spotipy_oauth_demo" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32913387" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -664,7 +671,8 @@
     <MESSAGE value="more modifications to the object model" />
     <MESSAGE value="tracqusition done, starting profile" />
     <MESSAGE value="better but still consistently dropping inconsistent composers" />
-    <option name="LAST_COMMIT_MESSAGE" value="better but still consistently dropping inconsistent composers" />
+    <MESSAGE value="beginning to end data ingestion :)" />
+    <option name="LAST_COMMIT_MESSAGE" value="beginning to end data ingestion :)" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -696,7 +704,7 @@
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#0#25#0" expanded="true" />
+            <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -748,7 +756,7 @@
         <state relative-caret-position="270">
           <caret line="19" column="0" selection-start-line="19" selection-start-column="0" selection-end-line="19" selection-end-column="0" />
           <folding>
-            <element signature="e#0#25#0" expanded="true" />
+            <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -792,7 +800,7 @@
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#0#25#0" expanded="true" />
+            <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -1016,7 +1024,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/microwave/app/models.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1320">
+        <state relative-caret-position="690">
           <caret line="88" column="65" selection-start-line="88" selection-start-column="65" selection-end-line="88" selection-end-column="65" />
           <folding>
             <element signature="e#0#28#0" expanded="true" />
@@ -1026,10 +1034,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/microwave/app/suckify.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="155" column="13" selection-start-line="155" selection-start-column="13" selection-end-line="155" selection-end-column="13" />
+        <state relative-caret-position="191">
+          <caret line="261" column="54" selection-start-line="261" selection-start-column="54" selection-end-line="261" selection-end-column="54" />
           <folding>
-            <element signature="e#0#25#0" expanded="true" />
+            <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
