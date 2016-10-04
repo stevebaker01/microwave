@@ -82,7 +82,7 @@ class SpotifyProfile(models.Model):
     loudness = models.FloatField()
     mode = models.BooleanField()
     popularity = models.PositiveSmallIntegerField()
-    signature = models.FloatField()
+    signature = models.FloatField(blank=True)
     speechiness = models.FloatField()
     tempo = models.FloatField()
     valence = models.FloatField()

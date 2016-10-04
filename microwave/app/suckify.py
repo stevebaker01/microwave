@@ -6,9 +6,23 @@ from dateutil.parser import parse as parse_date
 # album: 6BJbi298cful6Wzzgfk3tj
 # artist: 29vXvRArvRnl6mD4jy1C5R
 
+phantoms = ['14u4KXVp0iXQil79EpxXGc',
+            '29vXvRArvRnl6mD4jy1C5R',
+            '2fBURuq7FrlH6z5F92mpOl',
+            '38DX4hQVvPBs3PThDIAK11',
+            '4FCGgZrVQtcbDFEap3OAb2',
+            '4M84umUNRbZy1mJleyyRM9',
+            '4e3dkPcyps1LVGvdRcqw6Z',
+            '4lybctGarwN1hdctv433Js',
+            '6DFJfhZxwWe1yKQvRDJmdl',
+            '7vbswk78geSJYL92kHe7jU']
+
+
 # TODO: label support for albums
 # TODO: external id support (which objects?)
 # TODO: threading
+
+ABSENT = set()
 
 TRACK_FIELDS = ['album', 'artists', 'duration_ms', 'external_ids',
                 'external_urls', 'href', 'id', 'name', 'popularity', 'uri']
@@ -18,7 +32,7 @@ LIMITS = {'user_playlists': 50,
 
 def chunkify(input_list, chunk_size):
 
-    l = len(input_list)
+    input_list = list(input_list)
     chunks = []
     while input_list:
         this_chunk = set()
@@ -26,6 +40,8 @@ def chunkify(input_list, chunk_size):
             try:
                 this_chunk.add(input_list.pop())
             except KeyError:
+                break
+            except IndexError:
                 break
         chunks.append(this_chunk)
     return chunks
@@ -170,18 +186,20 @@ def update_genres(*dicts):
     return name_existing
 
 
-def update_composers_collections(artist_dict, album_dict, genres):
+def update_composers_collections(artist_dict,
+                                 existing_composer_dict,
+                                 album_dict,
+                                 existing_collection_dict,
+                                 genres):
+
 
     # bulk create new composers
-    print('new composers: {}'.format(len(artist_dict)))
-    for artist in artist_dict.values():
-        print('    {}: {}'.format(artist['id'], artist['name']))
-    print()
     composers = [make_composer(a) for a in artist_dict.values()]
     composers = models.Composer.objects.bulk_create(composers)
     comp_ids = set([composer.spotify_id for composer in composers])
     composers = models.Composer.objects.filter(spotify_id__in=comp_ids)
     composer_dict = dict((c.spotify_id, c) for c in composers)
+    composer_dict.update(existing_composer_dict)
 
     # bulk create new collections
     collections = [make_collection(a) for a in album_dict.values()]
@@ -189,6 +207,7 @@ def update_composers_collections(artist_dict, album_dict, genres):
     coll_ids = set([collection.spotify_id for collection in collections])
     collections = models.Collection.objects.filter(spotify_id__in=coll_ids)
     collection_dict = dict((c.spotify_id, c) for c in collections)
+    collection_dict.update(existing_collection_dict)
 
 
     # attach genres to new composers
@@ -201,10 +220,31 @@ def update_composers_collections(artist_dict, album_dict, genres):
         collection = collection_dict[spotify_id]
         collection.genres.set([genres[n] for n in spotify_album['genres']])
         album_comp_ids = [a['id'] for a in spotify_album['artists']]
-        d = set(album_comp_ids).difference(composer_dict.keys())
-        print(spotify_id)
-        print('difference [{}] ({}): {}'.format(len(album_comp_ids), len(d), d))
-        collection.composers.set([composer_dict[i] for i in album_comp_ids])
+
+        diffs = set(album_comp_ids).difference(composer_dict.keys())
+        """
+        if diffs:
+            #print('        {}'.format(diffs))
+            for diff in diffs:
+                in_artist_dict = diff in artist_dict
+                in_composers = diff in [c.spotify_id for c in composers]
+                in_composer_dict = diff in composer_dict
+                #print("'{} is in 'artist_dict': {}".format(diff, in_artist_dict))
+                print("'{} is in 'composers': {}".format(diff, in_composers))
+                print("'{} is in 'composers_dict': {}".format(diff, in_composer_dict))
+        """
+        these = set()
+        for i in album_comp_ids:
+            try:
+                these.add(composer_dict[i])
+            except KeyError:
+                ABSENT.add(i)
+                print(len(ABSENT))
+                print(sorted(ABSENT))
+                print()
+
+        collection.composers.set(these)
+        # collection.composers.set([composer_dict[i] for i in album_comp_ids])
 
     # return happy new items
     return composer_dict, collection_dict
@@ -216,15 +256,20 @@ def fetch_spotify(ids, thing_type, spotipy):
     chunks = chunkify(ids, size)
     things = []
     print(thing_type)
+    plural = ('{}' if thing_type.endswith('s') else '{}s').format(thing_type)
     for chunk in chunks:
-        plural = '{}s'.format(thing_type)
-        things.extend(getattr(spotipy, plural)(chunk)[plural])
+        these = getattr(spotipy, plural)(chunk)
+        if thing_type != 'audio_features':
+            things.extend(these[plural])
+        else:
+            things.extend(these)
     return dict((thing['id'], thing) for thing in things)
 
 def assemble_composers_collections(artist_dict, album_dict, spotipy):
 
-    # album: 4Wga8UrZ4imTBznPedjx59
-    # artist: 7vbswk78geSJYL92kHe7jU
+
+    global phantoms
+    inter_artist_dict = set(phantoms).intersection(artist_dict.keys())
 
     # fetch existing (full) collection objects fron django
     existing_collections = models.Collection.objects.filter(spotify_id__in=
@@ -240,18 +285,26 @@ def assemble_composers_collections(artist_dict, album_dict, spotipy):
         for artist in new_album['artists']:
             required_artist_ids.add(artist['id'])
 
+    inter_required_artists = set(phantoms).intersection(required_artist_ids)
+
     # fetch existing artist objects from django
     # is it getting all composr
     existing_composers = models.Composer.objects.filter(spotify_id__in=
                                                         required_artist_ids)
     id_composers = dict((c.spotify_id, c) for c in existing_composers)
+    inter_composers = set(phantoms).intersection(id_composers.keys())
     # fetch new (full) artists from spotify
+    new_artist_ids_test = set(id_composers.keys()).difference(required_artist_ids)
     new_artist_ids = set(required_artist_ids).difference(id_composers.keys())
+    inter_new_artist_ids = set(phantoms).intersection(new_artist_ids)
     new_artists = fetch_spotify(new_artist_ids, 'artist', spotipy)
+    inter_new_artists = set(phantoms).intersection(new_artists.keys())
     # upodate genres, composers, and collections
     genres = update_genres(new_artists, new_albums)
     new_comps, new_colls = update_composers_collections(new_artists,
+                                                        id_composers,
                                                         new_albums,
+                                                        id_collections,
                                                         genres)
     # merge old and new
     id_composers.update(new_comps)
@@ -275,8 +328,9 @@ def get_new_spotify(kind, ids, spotipy):
 
 def update_profiles(spotify_tracks, spotipy):
 
-    spotify_profiles = spotipy.audio_features(spotify_tracks.keys())
-    spotify_profiles = dict((p['id'], p) for p in spotify_profiles)
+    spotify_profiles = fetch_spotify(spotify_tracks.keys(),
+                                     'audio_features',
+                                     spotipy)
     profiles = []
     for profile_id, spotify_profile in spotify_profiles.items():
         spotify_profile['signature'] = spotify_profile.pop('time_signature')
