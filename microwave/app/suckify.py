@@ -269,10 +269,8 @@ def update_profiles(spotify_tracks, spotipy):
     return dict((profile.id, profile) for profile in profiles)
 
 
-def trackify(spotify_tracks, spotipy):
+def get_new_tracks(spotify_tracks, spotipy):
 
-    # returns a dictionary of spotify track ids to microwave/django
-    # track objects.
     spotify_artists = {}
     spotify_albums = {}
     new_tracks = []
@@ -281,25 +279,38 @@ def trackify(spotify_tracks, spotipy):
         new_tracks.append(track)
         spotify_artists.update(these_artists)
         spotify_albums[spotify_album['id']] = spotify_album
-
     new_tracks = models.Track.objects.bulk_create(new_tracks)
-    new_tracks = dict((track.spotify_id, track) for track in new_tracks)
-    # bulk created items do not include a primary key and therefore must
-    # be fetched after creation
-
-    new_tracks = models.Track.objects.filter(spotify_id__in=new_tracks.keys())
+    new_ids = [t.spotify_id for t in new_tracks]
+    new_tracks = models.Track.objects.filter(spotify_id__in=new_ids)
     new_tracks = dict((t.spotify_id, t) for t in new_tracks)
-    args = (spotify_artists, spotify_albums, spotipy)
-    composers, collections = assemble_composers_collections(*args)
-    profiles = update_profiles(spotify_tracks, spotipy)
+    return spotify_artists, spotify_albums, new_tracks
+
+
+def save_tracks(spotify_tracks, tracks, composers, collections, profiles):
+
+    saved_tracks = []
     for spotify_id, spotify_track in spotify_tracks.items():
-        track = new_tracks[spotify_id]
+        track = tracks[spotify_id]
         artist_ids = [a['id'] for a in spotify_track['artists']]
         track.composers.set([composers[c] for c in artist_ids])
         track.collections.add(collections[spotify_track['album']['id']])
         track.spotify_profile = profiles[spotify_id]
         track.save()
-    return new_tracks
+    return saved_tracks
+
+
+def trackify(spotify_tracks, spotipy):
+
+    # returns a dictionary of spotify track ids to microwave/django
+    # track objects.
+
+    args = (spotify_tracks, spotipy)
+    spotify_artists, spotify_albums, tracks = get_new_tracks(*args)
+    args = (spotify_artists, spotify_albums, spotipy)
+    composers, collections = assemble_composers_collections(*args)
+    profiles = update_profiles(spotify_tracks, spotipy)
+    args = (spotify_tracks, tracks, composers, collections, profiles)
+    return save_tracks(*args)
 
 
 def clean_playlist(spotify_tracks, track_dict, playlist):
