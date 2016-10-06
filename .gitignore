@@ -5,5 +5,5 @@
 *.spotipy*
 .idea*
 .idea/*
-app/migrations/*
+microwave/app/migrations/0*.py
 __pycache__
