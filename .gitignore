@@ -3,4 +3,7 @@
 .cache
 *.sqlite3
 *.spotipy*
+.idea*
+.idea/*
+app/migrations/*
 __pycache__
