@@ -1,4 +1,5 @@
 from . import models
+from microwave.celery import stalk
 from datetime import timedelta
 from dateutil.parser import parse as parse_date
 from steves_utilities.profiler import profile
@@ -6,7 +7,7 @@ from steves_utilities.profiler import profile
 # TODO: move from mysql to postgres and remove retrieval stage from creation
 # TODO: optimize limits for albums, artists, audio features
 # TODO: Resolve duplicate upc on collections and isrc on tracks weirdness
-# TODO: threading
+# TODO: asynchronous task queue
 # TODO: No album labels or album genres (spotify or spotipy bug?)
 
 TRACK_FIELDS = ['album', 'artists', 'duration_ms', 'external_ids',
@@ -16,6 +17,7 @@ LIMITS = {'user_playlists': 50,
 
 
 #TODO: move to personal utils
+@stalk.task
 def chunkify(input_list, chunk_size):
 
     input_list = list(input_list)

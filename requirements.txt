@@ -3,3 +3,4 @@
 django
 spotipy
 dateutils
+celery
