@@ -1,8 +1,11 @@
 from . import models
 from microwave.celery import stalk
+from celery.exceptions import TimeoutError
 from datetime import timedelta
 from dateutil.parser import parse as parse_date
 from steves_utilities.profiler import profile
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pprint import pprint
 
 # TODO: move from mysql to postgres and remove retrieval stage from creation
 # TODO: optimize limits for albums, artists, audio features
@@ -13,11 +16,11 @@ from steves_utilities.profiler import profile
 TRACK_FIELDS = ['album', 'artists', 'duration_ms', 'external_ids',
                 'external_urls', 'href', 'id', 'name', 'popularity', 'uri']
 LIMITS = {'user_playlists': 50,
-          'user_playlist_tracks': 100}
+          'user_playlist_tracks': 100,
+          'current_user_saved_tracks': 50}
 
 
 #TODO: move to personal utils
-@stalk.task
 def chunkify(input_list, chunk_size):
 
     input_list = list(input_list)
@@ -33,6 +36,16 @@ def chunkify(input_list, chunk_size):
     return chunks
 
 
+def dictify(the_list):
+
+    the_dict = {}
+    if not the_list:
+        return the_dict
+    if isinstance(the_list[0], dict):
+        return {x['id']: x for x in the_list}
+    return {x.spotify_id: x for x in the_list}
+
+
 def get_user(spotipy):
 
     # microwave current spotify user
@@ -45,10 +58,19 @@ def get_user(spotipy):
     return this_user
 
 
-def get_user_saved_tracks(user, spotipy):
+def get_saved_track_contents(spotipy):
 
-    pass
-
+    limit = LIMITS['current_user_saved_tracks']
+    offset = limit
+    these = spotipy.current_user_saved_tracks(limit=limit)
+    total = these['total']
+    contents = [this['track'] for this in these['items']]
+    while len(contents) < total:
+        these = spotipy.current_user_saved_tracks(limit=limit,
+                                                  offset=offset)['items']
+        contents.extend([this['track'] for this in these])
+        offset += limit
+    return dictify(contents)
 
 def get_playlist_contents(user, playlist, spotipy):
 
@@ -209,21 +231,59 @@ def update_composers_collections(artist_dict, exist_comp_dict,
     return composer_dict, collection_dict
 
 
-def fetch_spotify(ids, thing_type, spotipy):
+#@stalk.task
+def fetch(chunk, thing_type, spotipy):
+
+    return getattr(spotipy, thing_type)(chunk)
+
+
+def fetch_spotify(ids, type, spotipy):
 
     size = 20
     # make small chunks to retrieve
     chunks = chunkify(ids, size)
-    things = []
-    plural = ('{}' if thing_type.endswith('s') else '{}s').format(thing_type)
+    plural = ('{}' if type.endswith('s') else '{}s').format(type)
+    these = []
+    # results = []
+
+
+    # sequential calls are fine
     for chunk in chunks:
-        # request chunk
-        these = getattr(spotipy, plural)(chunk)
-        if thing_type != 'audio_features':
-            things.extend(these[plural])
-        else:
-            things.extend(these)
-    return dict((thing['id'], thing) for thing in things)
+        this = fetch(chunk, plural, spotipy)
+        if type != 'audio_features':
+            this = this[plural]
+        these.extend(this)
+
+    """
+    # Potentially a problem for spotipy or requests?
+    # TODO: try both these methods (async, multi-thread) without spotipy
+    # (direct calls through requests)
+    # concurrent tasks not working.
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [executor.submit(fetch, c, type, spotipy) for c in chunks]
+        for future in as_completed(futures):
+            if type != 'audio_features':
+                these.extend(future.result()[plural])
+            else:
+                these.extend(future.result())
+    """
+
+    """
+    # async tasks also hanging
+    for chunk in chunks:
+        results.append(fetch.delay(chunk, plural, spotipy))
+    for r in results:
+        try:
+            this = r.get(timeout=5)
+        except TimeoutError:
+            print(r)
+            print(r.result)
+            exit()
+        if type != 'audio_features':
+            this = this[plural]
+        these.extend(this)
+    """
+    return dict((this['id'], this) for this in these)
 
 
 def assemble_collections(album_dict, artist_dict, spotipy):
@@ -318,24 +378,26 @@ def get_new_tracks(spotify_tracks, spotipy):
     return spotify_artists, spotify_albums, new_tracks
 
 
-def save_tracks(spotify_tracks, tracks, composers, collections, profiles):
+def save_tracks(user, spotify_tracks, tracks, comps, colls, profiles):
 
     # sew tracks up with their composers, album, and profile
-    saved_tracks = []
+    saved_tracks = {}
     for spotify_id, spotify_track in spotify_tracks.items():
         track = tracks[spotify_id]
         # associate composers
         artist_ids = [a['id'] for a in spotify_track['artists']]
-        track.composers.set([composers[c] for c in artist_ids])
+        track.composers.set([comps[c] for c in artist_ids])
         # associate album
-        track.collections.add(collections[spotify_track['album']['id']])
+        track.collections.add(colls[spotify_track['album']['id']])
         # associate profile
         track.spotify_profile = profiles[spotify_id]
         track.save()
+        saved_tracks[track.spotify_id] = track
+    user.tracks.add(*tracks.values())
     return saved_tracks
 
 
-def trackify(spotify_tracks, spotipy):
+def trackify(user, spotify_tracks, spotipy):
 
     # returns a dictionary of spotify track ids to microwave/django
     # track objects.
@@ -348,11 +410,11 @@ def trackify(spotify_tracks, spotipy):
     # create new profiles for new tracks
     profiles = update_profiles(spotify_tracks, spotipy)
     # gather collections for new tracks
-    args = (spotify_tracks, tracks, composers, collections, profiles)
+    args = (user, spotify_tracks, tracks, composers, collections, profiles)
     return save_tracks(*args)
 
 
-def update_playlist_tracks(spotify_tracks, playlist, spotipy):
+def update_playlist_tracks(user, spotify_tracks, playlist, spotipy):
 
     # add new tracks to playlist
     # get existing tracks
@@ -365,12 +427,11 @@ def update_playlist_tracks(spotify_tracks, playlist, spotipy):
         new_spotify[i] = spotify_tracks[i]
     # microwave new tracks
     if new_spotify:
-        # microwave new tracks
-        new_tracks = trackify(new_spotify, spotipy)
-        # TODO: check this
+        new_tracks = trackify(user, new_spotify, spotipy)
         id_existing.update(new_tracks)
     playlist.tracks.set([t for t in id_existing.values()])
-    return playlist
+    playlist.save()
+    return id_existing
 
 
 def update_playlist(spotify_playlist, user, spotipy):
@@ -379,8 +440,8 @@ def update_playlist(spotify_playlist, user, spotipy):
     playlist, create = models.Playlist.objects.get_or_create(**args)
 
     # is the playlist new or has it been modified?
+    tracks = {}
     if create or playlist.version != spotify_playlist['snapshot_id']:
-
         # update the playlist
         playlist.title = spotify_playlist['name']
         playlist.version = spotify_playlist['snapshot_id']
@@ -389,14 +450,12 @@ def update_playlist(spotify_playlist, user, spotipy):
         # get spotify tracks in playlist
         id_spotify = get_playlist_contents(user, spotify_playlist, spotipy)
         # update microwave playlist tracks
-        args = (id_spotify, playlist, spotipy)
-        playlist = update_playlist_tracks(*args)
-        playlist.save()
-    return playlist
+        args = (user, id_spotify, playlist, spotipy)
+        tracks = update_playlist_tracks(*args)
+    return tracks
 
 
-@profile
-def get_user_playlists(user, spotipy):
+def get_user_playlist_tracks(user, spotipy):
 
     # collect spotify user playlists
     limit = LIMITS['user_playlists']
@@ -414,15 +473,37 @@ def get_user_playlists(user, spotipy):
     spotify_playlists = [p for p in spotify_playlists
                          if p['owner']['id'] == user.spotify_id]
 
-    # update and return microwave playlists
-    updated = [update_playlist(p, user, spotipy) for p in spotify_playlists]
-    return updated
+    # update microwave playlists and return their tracks
+    tracks = {}
+    for playlist in spotify_playlists:
+        these = update_playlist(playlist, user, spotipy)
+        tracks.update(these)
+    return tracks
+
+
+def get_user_saved_tracks(user, spotipy):
+
+    # identify spotify saved tracks
+    saved_tracks = get_saved_track_contents(spotipy)
+    # get existing microwave tracks
+    kwargs = {'spotify_id__in': saved_tracks.keys()}
+    id_existing = dictify(models.Track.objects.filter(**kwargs))
+    # identify any new tracks
+    new_ids = set(saved_tracks.keys()).difference(id_existing.keys())
+    new_spotify = {i: saved_tracks[i] for i in new_ids}
+    # microwave new tracks
+    if new_spotify:
+        new_tracks = trackify(user, new_spotify, spotipy)
+        id_existing.update(new_tracks)
+    return id_existing
 
 
 def get_user_tracks(user, spotipy):
 
-    #saved_tracks = get_user_saved_tracks(user, spotify)
-    playlists = get_user_playlists(user, spotipy)
+    saved_tracks = get_user_saved_tracks(user, spotipy)
+    playlist_tracks = get_user_playlist_tracks(user, spotipy)
+    saved_tracks.update(playlist_tracks)
+    return saved_tracks
 
 
 def suck(spotipy):

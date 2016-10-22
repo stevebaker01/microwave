@@ -1,6 +1,7 @@
 from django.db import models
 
 DOMAIN_CHOICES = (('spotify', 'spotify'),)
+HTTPS_SPOTIFY = 'https://api.spotify.com/v1/'
 
 
 class Genre(models.Model):
@@ -35,6 +36,12 @@ class Composer(models.Model):
     def __str__(self):
         return self.spotify_name if self.spotify_name else ''
 
+    def spotify_uri(self):
+        return 'spotify:artist:{}'.format(self.spotify_id)
+
+    def spotify_url(self):
+        return '{}artists/{}'.format(HTTPS_SPOTIFY, self.spotify_id)
+
 
 class Collection(models.Model):
 
@@ -68,25 +75,31 @@ class Collection(models.Model):
     def __str__(self):
         return self.spotify_name if self.spotify_name else ''
 
+    def spotify_uri(self):
+        return 'spotify:album:{}'.format(self.spotify_id)
+
+    def spotify_url(self):
+        return '{}albums/{}'.format(HTTPS_SPOTIFY, self.spotify_id)
+
 
 class SpotifyProfile(models.Model):
 
     id = models.CharField(max_length=100, primary_key=True, db_index=True)
 
-    acousticness = models.FloatField()
-    danceability = models.FloatField()
-    duration = models.DurationField()
-    energy = models.FloatField()
-    instrumentalness = models.FloatField()
-    key = models.PositiveSmallIntegerField()
-    liveness = models.FloatField()
-    loudness = models.FloatField()
-    mode = models.BooleanField()
-    popularity = models.PositiveSmallIntegerField()
+    acousticness = models.FloatField(blank=True)
+    danceability = models.FloatField(blank=True)
+    duration = models.DurationField(blank=True)
+    energy = models.FloatField(blank=True)
+    instrumentalness = models.FloatField(blank=True)
+    key = models.PositiveSmallIntegerField(blank=True)
+    liveness = models.FloatField(blank=True)
+    loudness = models.FloatField(blank=True)
+    mode = models.BooleanField(blank=True)
+    popularity = models.PositiveSmallIntegerField(blank=True)
     signature = models.FloatField(blank=True)
-    speechiness = models.FloatField()
-    tempo = models.FloatField()
-    valence = models.FloatField()
+    speechiness = models.FloatField(blank=True)
+    tempo = models.FloatField(blank=True)
+    valence = models.FloatField(blank=True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
     updated = models.DateTimeField(auto_now=True, blank=True)
 
@@ -118,6 +131,12 @@ class Track(models.Model):
 
     def __str__(self):
         return self.spotify_name if self.spotify_name else ''
+
+    def spotify_uri(self):
+        return 'spotify:track:{}'.format(self.spotify_id)
+
+    def spotify_url(self):
+        return '{}tracks/{}'.format(HTTPS_SPOTIFY, self.spotify_id)
 
 
 class Playlist(models.Model):
