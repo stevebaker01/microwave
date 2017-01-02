@@ -1,6 +1,12 @@
 from django.db import models
 
+
 DOMAIN_CHOICES = (('spotify', 'spotify'),)
+FORMAT_CHOICES = (('acc', 'acc'),
+                  ('mp3', 'mp3'),
+                  ('mp4', 'mp4'),
+                  ('wav', 'wav'),
+                  ('vorbis', 'vorbis'))
 HTTPS_SPOTIFY = 'https://api.spotify.com/v1/'
 
 
@@ -107,6 +113,16 @@ class SpotifyProfile(models.Model):
         return self.id
 
 
+class YoutubeProfile(models.Model):
+
+    id = models.CharField(max_length=11, primary_key=True)
+    title = models.CharField(max_length=200)
+    duration = models.DurationField()
+
+    def __str__(self):
+        return self.title
+
+
 class Track(models.Model):
 
     collections = models.ManyToManyField(Collection)
@@ -119,7 +135,7 @@ class Track(models.Model):
                                   unique=True,
                                   db_index=True)
     spotify_name = models.CharField(max_length=200, blank=True)
-    spotify_profile = models.OneToOneField(SpotifyProfile, blank=True)
+    # spotify_profile = models.OneToOneField(SpotifyProfile, blank=True)
     """
     TODO: Because I want to support multiple sources auto_now and
     auto_now_add will need to be removed and set per item once
@@ -128,6 +144,7 @@ class Track(models.Model):
     """
     spotify_created = models.DateTimeField(auto_now_add=True, blank=True)
     spotify_updated = models.DateTimeField(auto_now=True, blank=True)
+    youtube_profile = models.OneToOneField(YoutubeProfile, blank=True)
 
     def __str__(self):
         return self.spotify_name if self.spotify_name else ''
@@ -179,5 +196,4 @@ class User(models.Model):
     tracks = models.ManyToManyField(Track)
 
     def __str__(self):
-        if self.spotify:
-            return self.spotify_name
+        return self.spotify_name

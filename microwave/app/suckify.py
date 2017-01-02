@@ -1,11 +1,16 @@
+import os
 from . import models
+from .util import dictate
 # from microwave.celery import stalk
 # from celery.exceptions import TimeoutError
 from datetime import timedelta
 from dateutil.parser import parse as parse_date
+from steves_utilities.deconstructor import chunkify
 # from steves_utilities.profiler import profile
 # from concurrent.futures import ThreadPoolExecutor, as_completed
 # from pprint import pprint
+
+# google api key: AIzaSyBGRPJtxf8F9r1JjXCzCfq1AA44WlxHSlE
 
 # TODO: move from mysql to postgres and remove retrieval stage from creation
 # TODO: optimize limits for albums, artists, audio features
@@ -13,6 +18,10 @@ from dateutil.parser import parse as parse_date
 # TODO: asynchronous task queue
 # TODO: try direct http requests via 'requests'
 # TODO: No album labels or album genres (spotify or spotipy bug?)
+
+# TODO: amazon product advertizing API metadata
+# TODO: gracenote API metadata
+# TODO: musicgraph API metadata
 
 TRACK_FIELDS = ['album', 'artists', 'duration_ms', 'external_ids',
                 'external_urls', 'href', 'id', 'name', 'popularity', 'uri']
@@ -35,17 +44,6 @@ def chunkify(input_list, chunk_size):
                 break
         chunks.append(this_chunk)
     return chunks
-
-
-def dictate(this_list, field=None):
-
-    # standardized identifier to object dict constructor for cleanliness
-    if not this_list:
-        return {}
-    if isinstance(this_list[0], dict):
-        return {x[field if field else 'id']: x for x in this_list}
-    id_field = field if field else 'spotify_id'
-    return {getattr(x, id_field): x for x in this_list}
 
 
 def get_user(spotipy):
@@ -451,6 +449,15 @@ def update_playlist(spotify_playlist, user, spotipy):
         # update microwave playlist tracks
         args = (user, id_spotify, playlist, spotipy)
         tracks = update_playlist_tracks(*args)
+    else:
+        tracks = dictate(playlist.tracks.all())
+
+    # TODO: better way to do this
+    if playlist.title == 'powerwave':
+        proj_dir = os.path.dirname(os.path.dirname(__file__))
+        with open(os.path.join(proj_dir, 'powerwave.csv'), 'w') as f:
+            f.write(','.join(tracks.keys()))
+
     return tracks
 
 
@@ -499,10 +506,10 @@ def get_user_saved_tracks(user, spotipy):
 
 def get_user_tracks(user, spotipy):
 
-    saved_tracks = get_user_saved_tracks(user, spotipy)
+    # saved_tracks = get_user_saved_tracks(user, spotipy)
     playlist_tracks = get_user_playlist_tracks(user, spotipy)
-    saved_tracks.update(playlist_tracks)
-    return saved_tracks
+    # saved_tracks.update(playlist_tracks)
+    # return saved_tracks
 
 
 def suck(spotipy):
