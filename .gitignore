@@ -3,7 +3,5 @@
 .cache
 *.sqlite3
 *.spotipy*
-.idea*
-.idea/*
 microwave/app/migrations/0*.py
 __pycache__

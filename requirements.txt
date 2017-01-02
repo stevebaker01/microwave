@@ -1,6 +1,13 @@
 # Install with
 # $ pip install -r requirements.txt
+virtualenv
 django
 spotipy
 dateutils
 celery
+bottlenose
+lxml
+python-dateutil
+mysqlclient
+music_story
+isodate
