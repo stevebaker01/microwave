@@ -1,6 +1,6 @@
 import os
-import spotipy
-from . import suckify
+# import spotipy
+from . import ingest
 from spotipy import oauth2
 from django.http import HttpResponse, JsonResponse
 from pprint import pprint
@@ -33,8 +33,11 @@ def index(request):
             access_token = token_info['access_token']
 
     if access_token:
-        print("Access token available! Trying to get user information...")
-        results = suckify.suck(spotipy.Spotify(access_token))
+
+        print("Spotify access token available! Trying to get user information...")
+
+        tracks = ingest.ingest(spotify_token=access_token)
+        #results = suckify.suck(spotipy.Spotify(access_token))
 
         #results = sp.user_playlists(sp.current_user()['id'])
         #pprint(results.keys())
