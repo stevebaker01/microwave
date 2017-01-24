@@ -2,7 +2,7 @@ from django.db import models
 HTTPS_SPOTIFY = 'https://api.spotify.com/v1/'
 
 
-class SpotifyGenre(models.Models):
+class SpotifyGenre(models.Model):
 
     name = models.CharField(max_length=100,
                             unique=True,
@@ -16,6 +16,7 @@ class SpotifyComposer(models.Model):
                           unique=True,
                           db_index=True)
     name = models.CharField(max_length=200, blank=True)
+    genres = models.ManyToManyField(SpotifyGenre)
 
     def __str__(self):
         return self.name
@@ -54,6 +55,7 @@ class SpotifyCollection(models.Model):
 
 class SpotifyProfile(models.Model):
 
+    # basic fields
     id = models.CharField(primary_key=True,
                           max_length=100,
                           unique=True,
@@ -64,6 +66,7 @@ class SpotifyProfile(models.Model):
     composers = models.ManyToManyField(SpotifyComposer)
     duration = models.DurationField(blank=True)
 
+    # audio features fields
     acousticness = models.FloatField(blank=True)
     danceability = models.FloatField(blank=True)
     energy = models.FloatField(blank=True)
@@ -82,7 +85,7 @@ class SpotifyProfile(models.Model):
     updated = models.DateTimeField(auto_now=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return self.title
 
     def uri(self):
         return 'spotify:track:{}'.format(self.spotify_id)

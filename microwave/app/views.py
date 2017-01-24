@@ -41,7 +41,7 @@ def index(request):
 
         #results = sp.user_playlists(sp.current_user()['id'])
         #pprint(results.keys())
-        return HttpResponse(results)
+        return HttpResponse('hi')
     else:
         return HttpResponse(htmlForLoginButton())
 
