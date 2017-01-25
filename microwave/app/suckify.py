@@ -1,4 +1,3 @@
-import os
 from datetime import timedelta
 
 from dateutil.parser import parse as parse_date
@@ -152,24 +151,6 @@ def make_profile(spotify_track, audio_features):
     artists = dictate(spotify_track['artists'])
     # return track, spotify (json) album, and spotify (json) artists
     return profile, spotify_track['album'], artists
-
-"""
-def make_profile(spotify_track, spotify_profile):
-
-    # return a new profile object given a spotify (json) track and
-    # spotify (json) "audio_features" object
-    profile = spotify_models.SpotifyProfile(id=spotify_profile['id'])
-    # take popularity from spotify track
-    profile.popularity = spotify_track['popularity']
-    # plug in values from spotify audio features (json)
-    for attr in spotify_profile:
-        if attr == 'duration_ms':
-            duration_ms = spotify_profile['duration_ms']
-            profile.duration = timedelta(milliseconds=duration_ms)
-        else:
-            setattr(profile, attr, spotify_profile[attr])
-    return profile
-"""
 
 
 def update_genres(*dicts):
@@ -387,7 +368,6 @@ def save_tracks(user, spotify_tracks, tracks, comps, colls):
         track.collections.add(colls[spotify_track['album']['id']])
         track.save()
         saved_tracks[track.id] = track
-    user.tracks.add(*tracks.values())
     return saved_tracks
 
 
@@ -423,7 +403,6 @@ def update_playlist_tracks(user, spotify_tracks, playlist, spotipy):
         id_existing.update(new_tracks)
     playlist.tracks.set([t for t in id_existing.values()])
     playlist.save()
-    return id_existing
 
 
 def update_playlist(spotify_playlist, user, spotipy):
@@ -432,7 +411,6 @@ def update_playlist(spotify_playlist, user, spotipy):
     playlist, create = spotify_models.SpotifyPlaylist.objects.get_or_create(**args)
 
     # is the playlist new or has it been modified?
-    tracks = {}
     if create or playlist.version != spotify_playlist['snapshot_id']:
         # update the playlist
         playlist.title = spotify_playlist['name']
@@ -441,21 +419,11 @@ def update_playlist(spotify_playlist, user, spotipy):
         id_spotify = get_playlist_contents(user, spotify_playlist, spotipy)
         # update microwave playlist tracks
         args = (user, id_spotify, playlist, spotipy)
-        tracks = update_playlist_tracks(*args)
-    else:
-        tracks = dictate(playlist.tracks.all())
-
-    # TODO: better way to do this
-    """
-    if playlist.title == 'powerwave':
-        proj_dir = os.path.dirname(os.path.dirname(__file__))
-        with open(os.path.join(proj_dir, 'powerwave.csv'), 'w') as f:
-            f.write(','.join(tracks.keys()))
-    """
-    return tracks
+        update_playlist_tracks(*args)
+    return playlist
 
 
-def get_user_playlist_tracks(user, spotipy):
+def update_user_playlists(user, spotipy):
 
     # collect spotify user playlists
     limit = LIMITS['user_playlists']
@@ -473,43 +441,50 @@ def get_user_playlist_tracks(user, spotipy):
     spotify_playlists = [p for p in spotify_playlists
                          if p['owner']['id'] == user.id]
 
-    # update microwave playlists and return their tracks
-    tracks = {}
+    # update microwave plaßylists
+    playlists = []
     for playlist in spotify_playlists:
-        these = update_playlist(playlist, user, spotipy)
-        tracks.update(these)
-    return tracks
+        playlists.append(update_playlist(playlist, user, spotipy))
+    user.playlists.set(playlists)
+    user.save()
 
 
-def get_user_saved_tracks(user, spotipy):
+def update_user_saved_tracks(user, spotipy):
 
     # identify spotify saved tracks
     saved_tracks = get_saved_track_contents(spotipy)
     # get existing microwave tracks
     kwargs = {'id__in': saved_tracks.keys()}
-    id_existing = dictate(spotify_models.Track.objects.filter(**kwargs))
+    id_existing = dictate(spotify_models.SpotifyProfile.objects.filter(**kwargs))
     # identify any new tracks
     new_ids = set(saved_tracks.keys()).difference(id_existing.keys())
     new_spotify = {i: saved_tracks[i] for i in new_ids}
     # microwave new tracks
+    kwargs = {'id': 'saved_{}'.format(user.id)}
+    saved, created = spotify_models.SpotifyPlaylist.objects.get_or_create(**kwargs)
+
+    # microwave new tracks
+    new_tracks = {}
     if new_spotify:
         new_tracks = trackify(user, new_spotify, spotipy)
-        id_existing.update(new_tracks)
-    return id_existing
+    id_existing.update(new_tracks)
+
+    # save spotify saved tracks as a playlist
+    saved.tracks.set(id_existing)
+    saved.save()
+    user.playlists.add(saved)
+    user.save()
 
 
-def get_user_tracks(user, spotipy):
+def update_user_tracks(user, spotipy):
 
-    # saved_tracks = get_user_saved_tracks(user, spotipy)
-    playlist_tracks = get_user_playlist_tracks(user, spotipy)
-    # saved_tracks.update(playlist_tracks)
-    # return saved_tracks
-    return playlist_tracks
+   update_user_playlists(user, spotipy)
+   update_user_saved_tracks(user, spotipy)
 
 
 def suck(spotipy):
 
     user = get_user(spotipy)
-    tracks = get_user_tracks(user, spotipy)
-    return user, tracks
+    update_user_tracks(user, spotipy)
+    return user
 

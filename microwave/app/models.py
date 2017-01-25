@@ -3,45 +3,6 @@ from .domain_models import spotify_models
 from .domain_models import youtube_models
 
 
-"""
-class Genre(models.Model):
-
-    domain = models.CharField(max_length=100,
-                              choices=DOMAIN_CHOICES,
-                              blank=False)
-    name = models.CharField(max_length=50, blank=False)
-
-    class Meta:
-        unique_together = ('domain', 'name')
-
-    def __str__(self):
-        return '{}: {}'.format(self.domain, self.name)
-
-
-class Composer(models.Model):
-
-    name = models.CharField(max_length=200, blank=True)
-    genres = models.ManyToManyField(Genre)
-
-    def __str__(self):
-        return self.name
-
-
-class Collection(models.Model):
-
-    composers = models.ManyToManyField(Composer)
-    genres = models.ManyToManyField(Genre)
-    label = models.CharField(max_length=250, blank=True)
-    name = models.CharField(max_length=200, blank=True)
-    release = models.DateField(blank=True)
-    created = models.DateTimeField(auto_now_add=True, blank=True)
-    updated = models.DateTimeField(auto_now=True, blank=True)
-    upc = models.CharField(max_length=15, blank=True)
-
-    def __str__(self):
-        return self.name
-"""
-
 class Track(models.Model):
 
     isrc = models.CharField(max_length=12,

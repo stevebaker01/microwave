@@ -1,4 +1,6 @@
 from django.db import models
+from ..util import dictate
+
 HTTPS_SPOTIFY = 'https://api.spotify.com/v1/'
 
 
@@ -98,7 +100,6 @@ class SpotifyPlaylist(models.Model):
 
     id = models.CharField(primary_key=True,
                           max_length=100,
-                          blank=True,
                           unique=True,
                           db_index=True)
     title = models.CharField(max_length=250, blank=True)
@@ -124,7 +125,14 @@ class SpotifyUser(models.Model):
     name = models.CharField(max_length=200, blank=True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
     updated = models.DateTimeField(auto_now=True, blank=True)
-    tracks = models.ManyToManyField(SpotifyProfile)
+    playlists = models.ManyToManyField(SpotifyPlaylist)
 
     def __str__(self):
         return self.name
+
+    def tracks(self):
+        tracks = {}
+        for playlist in self.playlists.all():
+            tracks.update(dictate(playlist.tracks.all()))
+
+

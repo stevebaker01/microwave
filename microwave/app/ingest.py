@@ -5,7 +5,7 @@ import spotipy
 
 def ingest(spotify_token=None):
 
-    sources = {}
+    accounts = {}
     if spotify_token:
-        sources['spotify'], tracks = suckify.suck(spotipy.Spotify(spotify_token))
+        spotify_user = suckify.suck(spotipy.Spotify(spotify_token))
 
