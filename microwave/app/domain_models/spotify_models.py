@@ -134,5 +134,3 @@ class SpotifyUser(models.Model):
         tracks = {}
         for playlist in self.playlists.all():
             tracks.update(dictate(playlist.tracks.all()))
-
-

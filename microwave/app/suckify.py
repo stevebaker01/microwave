@@ -5,9 +5,9 @@ from steves_utilities.deconstructor import chunkify
 from .domain_models import spotify_models
 from .util import dictate
 
-# from steves_utilities.profiler import profile
-# from concurrent.futures import ThreadPoolExecutor, as_completed
-# from pprint import pprint
+"""
+This module is responsible for ingesting data from spotify.
+"""
 
 # google api key: AIzaSyBGRPJtxf8F9r1JjXCzCfq1AA44WlxHSlE
 
@@ -355,7 +355,7 @@ def get_new_tracks(spotify_tracks, spotipy):
     return spotify_artists, spotify_albums, new_tracks
 
 
-def save_tracks(user, spotify_tracks, tracks, comps, colls):
+def save_tracks(spotify_tracks, tracks, comps, colls):
 
     # sew tracks up with their composers, album, and profile
     saved_tracks = {}
@@ -371,7 +371,7 @@ def save_tracks(user, spotify_tracks, tracks, comps, colls):
     return saved_tracks
 
 
-def trackify(user, spotify_tracks, spotipy):
+def trackify(spotify_tracks, spotipy):
 
     # returns a dictionary of spotify track ids to microwave/django
     # track objects.
@@ -382,11 +382,11 @@ def trackify(user, spotify_tracks, spotipy):
     # gather composers for new tracks
     composers, collections = assemble_composers_collections(*args)
     # gather collections for new tracks
-    args = (user, spotify_tracks, tracks, composers, collections)
+    args = (spotify_tracks, tracks, composers, collections)
     return save_tracks(*args)
 
 
-def update_playlist_tracks(user, spotify_tracks, playlist, spotipy):
+def update_playlist_tracks(spotify_tracks, playlist, spotipy):
 
     # add new tracks to playlist
     # get existing tracks
@@ -399,7 +399,7 @@ def update_playlist_tracks(user, spotify_tracks, playlist, spotipy):
         new_spotify[i] = spotify_tracks[i]
     # microwave new tracks
     if new_spotify:
-        new_tracks = trackify(user, new_spotify, spotipy)
+        new_tracks = trackify(new_spotify, spotipy)
         id_existing.update(new_tracks)
     playlist.tracks.set([t for t in id_existing.values()])
     playlist.save()
@@ -418,7 +418,7 @@ def update_playlist(spotify_playlist, user, spotipy):
         # get spotify tracks in playlist
         id_spotify = get_playlist_contents(user, spotify_playlist, spotipy)
         # update microwave playlist tracks
-        args = (user, id_spotify, playlist, spotipy)
+        args = (id_spotify, playlist, spotipy)
         update_playlist_tracks(*args)
     return playlist
 
@@ -466,7 +466,7 @@ def update_user_saved_tracks(user, spotipy):
     # microwave new tracks
     new_tracks = {}
     if new_spotify:
-        new_tracks = trackify(user, new_spotify, spotipy)
+        new_tracks = trackify(new_spotify, spotipy)
     id_existing.update(new_tracks)
 
     # save spotify saved tracks as a playlist
@@ -487,4 +487,3 @@ def suck(spotipy):
     user = get_user(spotipy)
     update_user_tracks(user, spotipy)
     return user
-
