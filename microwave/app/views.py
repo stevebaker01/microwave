@@ -16,6 +16,7 @@ CACHE = '.spotipyoauthcache'
 sp_oauth = oauth2.SpotifyOAuth(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI,
                                 scope=SCOPE,cache_path=CACHE)
 
+
 def index(request):
     access_token = ""
 

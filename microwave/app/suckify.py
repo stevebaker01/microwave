@@ -9,8 +9,6 @@ from .util import dictate
 This module is responsible for ingesting data from spotify.
 """
 
-# google api key: AIzaSyBGRPJtxf8F9r1JjXCzCfq1AA44WlxHSlE
-
 # TODO: move from mysql to postgres and remove retrieval stage from creation
 # TODO: optimize limits for albums, artists, audio features
 # TODO: Resolve duplicate upc on collections and isrc on tracks weirdness
@@ -200,7 +198,7 @@ def batch_create(thing_type, spotify_dict, existing_dict):
 
 
 def update_composers_collections(artist_dict, exist_comp_dict,
-                                 album_dict, exist_coll_dict,genres):
+                                 album_dict, exist_coll_dict, genres):
 
     composer_dict = batch_create('composer', artist_dict, exist_comp_dict)
     collection_dict = batch_create('collection', album_dict, exist_coll_dict)
@@ -441,7 +439,7 @@ def update_user_playlists(user, spotipy):
     spotify_playlists = [p for p in spotify_playlists
                          if p['owner']['id'] == user.id]
 
-    # update microwave plaßylists
+    # update microwave playlists
     playlists = []
     for playlist in spotify_playlists:
         playlists.append(update_playlist(playlist, user, spotipy))
@@ -485,5 +483,5 @@ def update_user_tracks(user, spotipy):
 def suck(spotipy):
 
     user = get_user(spotipy)
-    update_user_tracks(user, spotipy)
+    # update_user_tracks(user, spotipy)
     return user

@@ -1,0 +1,10 @@
+use microwave;
+BEGIN;
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE `app_youtubeplaylist_videos`;
+TRUNCATE `app_youtubeuser`;
+TRUNCATE `app_youtubeplaylist`;
+TRUNCATE `app_youtubeprofile`;
+UPDATE `app_track` SET `youtube_profile_id`=NULL WHERE  `youtube_profile_id` IS NOT NULL;
+SET FOREIGN_KEY_CHECKS = 1;
+COMMIT;

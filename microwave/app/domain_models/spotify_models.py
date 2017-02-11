@@ -95,6 +95,14 @@ class SpotifyProfile(models.Model):
     def url(self):
         return '{}tracks/{}'.format(HTTPS_SPOTIFY, self.spotify_id)
 
+    def genres(self):
+
+        genres = []
+        for collection in self.collections.all():
+            for genre in collection.genres.all():
+                genres.append(genre)
+        return genres
+
 
 class SpotifyPlaylist(models.Model):
 
@@ -133,4 +141,10 @@ class SpotifyUser(models.Model):
     def tracks(self):
         tracks = {}
         for playlist in self.playlists.all():
+
+            # for preserving my youtube data quota during testing
+            if playlist.title != 'powertide':
+                continue
+
             tracks.update(dictate(playlist.tracks.all()))
+        return tracks
