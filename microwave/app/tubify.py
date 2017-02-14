@@ -5,7 +5,7 @@ from django.db.utils import IntegrityError
 from apiclient.discovery import build
 from isodate import parse_duration as iso
 from .domain_models import youtube_models
-from steves_utilities.normalizer import normalize_string
+from oauth2client import client
 
 DEVELOPER_KEY = 'AIzaSyC-epq05GzsgImwy_Z62oKDE4Ur06hOGSo'
 API_SERVICE = 'youtube'
@@ -80,7 +80,6 @@ def get_youtube_video(track, youtube, youtube_ids):
             durations[diff] = videos[i]
         return durations[min(list(durations.keys()))]
     return first
-
 
 
 def get_youtube_videos(youtube, youtube_ids):

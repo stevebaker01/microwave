@@ -7,14 +7,17 @@ from pprint import pprint
 
 
 PORT_NUMBER = 8000
-CLIENT_ID = os.environ['CLIENT_ID']
-CLIENT_SECRET = os.environ['CLIENT_SECRET']
-REDIRECT_URI = 'http://localhost:8000'
-SCOPE = 'playlist-read-private'
-CACHE = '.spotipyoauthcache'
+SPOTIFY_CLIENT_ID = os.environ['SPOTIFY_CLIENT_ID']
+SPOTIFY_CLIENT_SECRET = os.environ['SPOTIFY_CLIENT_SECRET']
+SPOTIFY_REDIRECT_URI = 'http://localhost:8000/'
+SPOTIFY_SCOPE = 'playlist-read-private'
+SPOTIFY_CACHE = '.spotipyoauthcache'
 
-sp_oauth = oauth2.SpotifyOAuth(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI,
-                                scope=SCOPE,cache_path=CACHE)
+sp_oauth = oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID,
+                               SPOTIFY_CLIENT_SECRET,
+                               SPOTIFY_REDIRECT_URI,
+                               scope=SPOTIFY_SCOPE,
+                               cache_path=SPOTIFY_CACHE)
 
 
 def index(request):

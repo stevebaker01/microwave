@@ -24,6 +24,10 @@ def ingest(spotify_token=None):
 
     if spotify_token:
         spotify_user = suckify.suck(spotipy.Spotify(spotify_token))
+        kwargs = {'id': 'c848823c-8f4e-44ec-82fc-87e9c8bc6fc6',
+                'name': spotify_user.name,
+                'spotify_user': spotify_user}
+        user, created = models.User.objects.get_or_create(**kwargs)
         spotify_profiles = spotify_user.tracks()
         args = {'spotify_profile__id__in': list(spotify_profiles.keys())}
         microwave_tracks = models.Track.objects.filter(**args)
@@ -41,5 +45,6 @@ def ingest(spotify_token=None):
             # dedup
             hot_tracks = microwave_spotify(list(dictate(cold).values()))
             microwave_tracks.update(hot_tracks)
+        user.tracks.set(list(microwave_tracks.values()))
+        user.save()
         tubify.tv_dinner(microwave_tracks.values())
-

@@ -29,11 +29,13 @@ class Track(models.Model):
 
 class User(models.Model):
 
+    id = models.CharField(primary_key=True,
+                          unique=True,
+                          db_index=True,
+                          max_length=36)
     name = models.CharField(max_length=200, blank=True)
     spotify_user = models.OneToOneField(spotify_models.SpotifyUser, blank=True)
     youtube_user = models.OneToOneField(youtube_models.YoutubeUser, blank=True)
-    playlists = models.ManyToManyField(youtube_models.YoutubePlaylist,
-                                       blank=True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
     updated = models.DateTimeField(auto_now=True, blank=True)
     tracks = models.ManyToManyField(Track)
