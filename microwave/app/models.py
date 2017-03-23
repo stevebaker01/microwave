@@ -15,13 +15,15 @@ class Track(models.Model):
     spotify_profile = models.OneToOneField(spotify_models.SpotifyProfile,
                                            max_length=100,
                                            blank=True,
+                                           null=True,
                                            unique=True,
                                            db_index=True)
     youtube_profile = models.OneToOneField(youtube_models.YoutubeProfile,
                                            max_length=11,
+                                           null=True,
                                            blank=True)
-    created = models.DateTimeField(auto_now_add=True, blank=True)
-    updated = models.DateTimeField(auto_now=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
@@ -34,10 +36,14 @@ class User(models.Model):
                           db_index=True,
                           max_length=36)
     name = models.CharField(max_length=200, blank=True)
-    spotify_user = models.OneToOneField(spotify_models.SpotifyUser, blank=True)
-    youtube_user = models.OneToOneField(youtube_models.YoutubeUser, blank=True)
-    created = models.DateTimeField(auto_now_add=True, blank=True)
-    updated = models.DateTimeField(auto_now=True, blank=True)
+    spotify_user = models.OneToOneField(spotify_models.SpotifyUser,
+                                        blank=True,
+                                        null=True)
+    youtube_user = models.OneToOneField(youtube_models.YoutubeUser,
+                                        blank=True,
+                                        null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     tracks = models.ManyToManyField(Track)
 
     def __str__(self):

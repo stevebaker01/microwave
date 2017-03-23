@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from dateutil.parser import parse as parse_date
-from steves_utilities.deconstructor import chunkify
+# from steves_utilities.deconstructor import chunkify
 from .domain_models import spotify_models
 from .util import dictate
 
@@ -483,5 +483,5 @@ def update_user_tracks(user, spotipy):
 def suck(spotipy):
 
     user = get_user(spotipy)
-    # update_user_tracks(user, spotipy)
+    update_user_tracks(user, spotipy)
     return user

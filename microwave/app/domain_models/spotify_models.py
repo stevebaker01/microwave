@@ -6,9 +6,8 @@ HTTPS_SPOTIFY = 'https://api.spotify.com/v1/'
 
 class SpotifyGenre(models.Model):
 
-    name = models.CharField(max_length=100,
-                            unique=True,
-                            db_index=True)
+    name = models.CharField(max_length=100, unique=True, db_index=True)
+    created = models.DateTimeField(auto_now_add=True)
 
 
 class SpotifyComposer(models.Model):
@@ -17,8 +16,10 @@ class SpotifyComposer(models.Model):
                           max_length=100,
                           unique=True,
                           db_index=True)
-    name = models.CharField(max_length=200, blank=True)
+    name = models.CharField(max_length=200, blank=True, null=True)
     genres = models.ManyToManyField(SpotifyGenre)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -43,16 +44,17 @@ class SpotifyCollection(models.Model):
                           unique=True,
                           db_index=True)
     composers = models.ManyToManyField(SpotifyComposer)
-    label = models.CharField(max_length=250, blank=True)
+    label = models.CharField(max_length=250, blank=True, null=True)
     genres = genres = models.ManyToManyField(SpotifyGenre)
     title = models.CharField(max_length=200, blank=True)
-    release = models.DateField(blank=True)
+    release = models.DateField(blank=True, null=True)
     type = models.CharField(max_length=11,
                             blank=True,
+                            null=True,
                             choices=TYPE_CHOICES)
-    upc = models.CharField(max_length=15, blank=True)
-    created = models.DateTimeField(auto_now_add=True, blank=True)
-    updated = models.DateTimeField(auto_now=True, blank=True)
+    upc = models.CharField(max_length=15, blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
 
 class SpotifyProfile(models.Model):
@@ -62,29 +64,29 @@ class SpotifyProfile(models.Model):
                           max_length=100,
                           unique=True,
                           db_index=True)
-    isrc = models.CharField(max_length=12, blank=True)
-    title = models.CharField(max_length=200, blank=True)
+    isrc = models.CharField(max_length=12, blank=True, null=True)
+    title = models.CharField(max_length=200, blank=True, null=True)
     collections = models.ManyToManyField(SpotifyCollection)
     composers = models.ManyToManyField(SpotifyComposer)
-    duration = models.DurationField(blank=True)
+    duration = models.DurationField(blank=True, null=True)
 
     # audio features fields
-    acousticness = models.FloatField(blank=True)
-    danceability = models.FloatField(blank=True)
-    energy = models.FloatField(blank=True)
-    instrumentalness = models.FloatField(blank=True)
-    key = models.PositiveSmallIntegerField(blank=True)
-    liveness = models.FloatField(blank=True)
-    loudness = models.FloatField(blank=True)
-    mode = models.BooleanField(blank=True)
-    popularity = models.PositiveSmallIntegerField(blank=True)
-    signature = models.FloatField(blank=True)
-    speechiness = models.FloatField(blank=True)
-    tempo = models.FloatField(blank=True)
-    valence = models.FloatField(blank=True)
+    acousticness = models.FloatField(blank=True, null=True)
+    danceability = models.FloatField(blank=True, null=True)
+    energy = models.FloatField(blank=True, null=True)
+    instrumentalness = models.FloatField(blank=True, null=True)
+    key = models.PositiveSmallIntegerField(blank=True, null=True)
+    liveness = models.FloatField(blank=True, null=True)
+    loudness = models.FloatField(blank=True, null=True)
+    mode = models.BooleanField(default=False)
+    popularity = models.PositiveSmallIntegerField(blank=True, null=True)
+    signature = models.FloatField(blank=True, null=True)
+    speechiness = models.FloatField(blank=True, null=True)
+    tempo = models.FloatField(blank=True, null=True)
+    valence = models.FloatField(blank=True, null=True)
 
-    created = models.DateTimeField(auto_now_add=True, blank=True)
-    updated = models.DateTimeField(auto_now=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
@@ -110,11 +112,11 @@ class SpotifyPlaylist(models.Model):
                           max_length=100,
                           unique=True,
                           db_index=True)
-    title = models.CharField(max_length=250, blank=True)
-    version = models.TextField(max_length=1000, blank=True)
-    created = models.DateTimeField(auto_now_add=True, blank=True)
-    updated = models.DateTimeField(auto_now=True, blank=True)
+    title = models.CharField(max_length=250, blank=True, null=True)
+    version = models.TextField(max_length=1000, blank=True, null=True)
     tracks = models.ManyToManyField(SpotifyProfile)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def count(self):
         return len(self.tracks)
@@ -130,10 +132,11 @@ class SpotifyUser(models.Model):
                           blank=True,
                           unique=True,
                           db_index=True)
-    name = models.CharField(max_length=200, blank=True)
-    created = models.DateTimeField(auto_now_add=True, blank=True)
-    updated = models.DateTimeField(auto_now=True, blank=True)
+    name = models.CharField(max_length=200, blank=True, null=True)
     playlists = models.ManyToManyField(SpotifyPlaylist)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
 
     def __str__(self):
         return self.name

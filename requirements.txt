@@ -9,5 +9,5 @@ bottlenose
 lxml
 python-dateutil
 mysqlclient
-music_story
 isodate
+google-api-python-client
